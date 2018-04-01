@@ -1,0 +1,27 @@
+:RespuestaAleatoria
+Mira que bien
+Baia Baia
+Ok
+:Saludos
+Hola
+:SaludosP
+Que bueno
+Que bien
+Me alegra que estes bien
+:SaludosN
+Por que estas mal?
+:QuienSoy
+Soy un chatbot, mi creador es Esteban López, estudia en la gloriosa Usach
+Soy un simple robot programado para que te entretengas
+:Que Haces?
+Realizando complejos algoritmos matematicos para que pienses que le hablas a una persona normal
+01010100100100100100101001001
+:Cancion
+Despacito, Quiero respirar tu cuello despacito, Deja que te diga cosas al oído, Para que te acuerdes si no estás conmigo
+Por ahorrarme el peluquero, Me cortaron mal el pelo, Ay que voy a hacer ahora, Esto no tiene mejora.
+:Chiste
+Hardware: Lo que puedes partir con un hacha. Software: Aquello que sólo puedes maldecir.
+¿QuiénSabeComoArreglarLaBarraEspaciadora?.
+:Simpson
+Lisa es vegetariana, igual que su creador.
+Yo creo que Homero es más inteligente que yo

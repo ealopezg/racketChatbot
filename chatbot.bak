@@ -1,0 +1,28 @@
+#lang scheme
+
+;CATEGORIAS
+;
+;0: Saludo
+;1: Estado de animo
+
+(define (encontrarPalabra mensaje palabra))
+
+(define (verCategoria mensaje)
+  (let ((lista (string-split mensaje)))
+    (
+
+
+(define (responder mensaje)
+ (encontrarFrase (verCategoria mensaje)))
+
+
+
+
+(define (abrirArchivo nombre)
+  (
+(define chat
+  (
+
+
+      
+      
