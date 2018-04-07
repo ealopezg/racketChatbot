@@ -10,7 +10,7 @@ Estas instrucciones le ayudarán a instalar el chatbot en su ordenador
 
 Tener instalado [DrRacket](https://download.racket-lang.org/)
 
-Descargar el .zip desde el boton de arriba
+Descargar el [.zip](https://github.com/ealopezg/racketChatbot/archive/master.zip) 
 
 o clonar el repositorio, para esto tiene que instalar git, en este caso para UBUNTU
 
