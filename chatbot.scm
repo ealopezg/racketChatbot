@@ -1,7 +1,7 @@
 #lang scheme
 
 ;CATEGORIAS
-;
+;HOLA CONCHETUMAREEE
 ;0: Saludo
 ;1: Estado de animo
 
