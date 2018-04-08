@@ -54,15 +54,33 @@
  Recorrido   : Arreglo
 |#
 
-(define (crearChatbot nombre personalidad)
+(define (genChatbot nombre personalidad)
   '(nombre personalidad))
+
+(define (chatbot? cbot)
+  (if (list? cbot)
+      (if (and (string? (car cbot) (number? (cdr cbot))))
+          #t
+          #f)
+      #f))
+
+(define (getCbotName cbot)
+  (if (chatbot? cbot)
+      (car cbot)
+      #f))
+
+(define (getCbotPer cbot)
+  (if (chatbot? cbot)
+      (cdr cbot)
+      #f))
+
+
 
 #|
  Descripcion : Devuelve la hora actual en formato de string
  Dominio     : nada
  Recorrido   : Hora actual como string DIA/MES/AÑO HORA:MINUTOS:SEGUNDOS
 |#
-
 (define (hora)
   (date->string (current-date) "~d/~m/~Y ~H:~M:~S")) 
 
@@ -72,15 +90,54 @@
  Recorrido   : log modificado con el delimitador BEGINDIALOG y el saludo inicial
 |#
 (define (beginDialog chatbot log seed)
-  (string-append log "\n\n" "BEGINDIALOG" (hora) "\n\n" (car chatbot) ": " (saludoInicial)))
+  (string-append log "\n\n" "BEGINDIALOG " (hora) "\n\n" (getCbotName chatbot) ": " (saludoInicial)))
 
+
+
+#|
+(define (genRespuesta msg chatbot log seed)
+  (if (chatbot? chatbot)
+      (let ((lista (split msg)))
+      (if (= (getCbotPer chatbot) 0)
+          (let ((lista (split msg)))
+            )
+|#
+
+(define (genRespuesta msg chatbot log seed) #t)
+
+(define (split str)
+(define (split1 lista aux)
+     (if (= (length lista) 0)
+         (list (list->string aux))
+         (if (eq? (car lista) #\space)
+             (append (list (list->string aux)) (split1 (cdr lista) '()))
+             (split1 (cdr lista) (append aux (list (car lista))))
+             )
+         )
+  ) (split1 (string->list str) '()))
+
+
+(define (searchWord str palabra)
+  (define (searchWord1 lista palabra)
+    (if (= (length lista) 0)
+        #f
+        (if (eq? (car lista) palabra)
+            #t
+            (searchWord1 (cdr lista) palabra)
+            )
+        )
+    )
+(searchWord1 (split str) palabra))
+
+
+       
 #|
  Descripcion : Envia el mensaje del usuario
  Dominio     : mensaje, estructura chatbot, log y seed
  Recorrido   : Log modificado con el mensaje del usuario y seguido de la respuesta del chatbot
 |#
 (define (sendMessage msg chatbot log seed)
-  (string-append log "\n\n" (hora) " Usuario: " msg))
+  (string-append log "\n\n" (hora) " Usuario: " msg "\n" (genRespuesta msg chatbot log seed)))
   
 
 
