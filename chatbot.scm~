@@ -27,18 +27,7 @@
         (rnrs records syntactic (6))           ; R6RS library section 6.2
         (srfi :19))
 
-#|
- Descripcion :
- Dominio     :
- Recorrido   : 
-|#
 
-
-#|
- Descripcion : Crea el saludo inicial a partir de la hora.
- Dominio     : nada
- Recorrido   : string con el saludo dependiendo de la hora actual.
-|#
 (define (saludoInicial)
      (cond ((>= (string->number (date->string (current-date) "~H") ) 21) "Buenas noches, en que lo puedo ayudar ?")
            ((<= (string->number (date->string (current-date) "~H") ) 6) "Buenas noches, en que lo puedo ayudar a esta hora de la madrugada?")
@@ -48,45 +37,16 @@
   )
 
 
-#|
- Descripcion : Genera un chatbot a partir de su nombre y personalidad
- Dominio     : String con el nombre y entero con la personalidad
- Recorrido   : Arreglo
-|#
 
 (define (crearChatbot nombre personalidad)
   '(nombre personalidad))
 
-#|
- Descripcion : Devuelve la hora actual en formato de string
- Dominio     : nada
- Recorrido   : Hora actual como string DIA/MES/AÑO HORA:MINUTOS:SEGUNDOS
-|#
-
 (define (hora)
-  (date->string (current-date) "~d/~m/~Y ~H:~M:~S")) 
+  (date->string (current-date) "~H:~M:~S ~d/~m/~Y")) 
 
-#|
- Descripcion : Comienza una nueva conversacion
- Dominio     : Estructura chatbot, log y la semilla para respuestas pseudoaleatorias
- Recorrido   : log modificado con el delimitador BEGINDIALOG y el saludo inicial
-|#
+;FUNCION
 (define (beginDialog chatbot log seed)
-  (string-append log "\n\n" "BEGINDIALOG" (hora) "\n\n" (car chatbot) ": " (saludoInicial)))
-
-#|
- Descripcion : Envia el mensaje del usuario
- Dominio     : mensaje, estructura chatbot, log y seed
- Recorrido   : Log modificado con el mensaje del usuario y seguido de la respuesta del chatbot
-|#
-(define (sendMessage msg chatbot log seed)
-  (string-append log "\n\n" (hora) " Usuario: " msg))
-  
-
-
-
-
-
+  (string-append log "\n\n" "Chat iniciado:" (hora) "\n\n" (car chatbot) ": " (saludoInicial)))
 
 
 (define cbot '("CHATBOT" 0))
