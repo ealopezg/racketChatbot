@@ -25,7 +25,8 @@
         (rnrs records procedural (6))          ; R6RS library section 6.3
         (rnrs records inspection (6))          ; R6RS library section 6.4
         (rnrs records syntactic (6))           ; R6RS library section 6.2
-        (srfi :19))
+        (srfi :19)
+        (srfi :27))
 
 #|
  Descripcion :
@@ -140,6 +141,49 @@
   (string-append log "\n\n" (hora) " Usuario: " msg "\n" (genRespuesta msg chatbot log seed)))
   
 
+
+#|
+ Descripcion : Genera una lista de numeros pseudoaleatorios en base al algoritmo descrito en
+               https://es.wikipedia.org/wiki/Generador_de_n%C3%BAmeros_aleatorios
+ Dominio     : enteros semilla , a, c, m y i=0
+ Recorrido   : lista de m numeros pseudoaleatorios
+|#
+(define (genNumeros semilla a c m i)
+  (if (= i m)
+      '()
+      (if (= i 0)
+          (append (list semilla) (genNumeros semilla a c m (+ 1 i)))
+          (append (list (modulo (+ (* a semilla) c) m)) (genNumeros (modulo (+ (* a semilla) c) m) a c m (+ 1 i))))))
+
+
+
+#|
+ Descripcion : Llama a la funcion genNumeros(),genera una lista de numeros pseudoaleatorios en base al algoritmo descrito en
+               https://es.wikipedia.org/wiki/Generador_de_n%C3%BAmeros_aleatorios , utilizando los enteros:
+               a = 1103515245
+               c = 12345
+               m = 32768
+
+ Dominio     : semilla, si esta es 0 se ocupa (time-second (current-time))
+ Recorrido   : lista de m números pseudoaleatorios
+|#
+(define (randomList seed)
+  (if (= seed 0)
+      (genNumeros (time-second (current-time)) 1103515245 12345 32768 0)      
+      (genNumeros seed 1103515245 12345 32768 0)))
+
+#|
+ Descripcion : Devuelve un numero pseudoaleatorio en el rango [0,n[
+ Dominio     : semilla y n
+ Recorrido   : entero
+|#
+(define (randomInt seed n)
+  (modulo (list-ref (randomList seed) (/ 32768 2)) n))
+
+(random-integer 10)
+
+  
+  
 
 
 
