@@ -35,6 +35,14 @@
 |#
 
 
+(define diccionario
+  (list (list "HOLA*" (list "Hola, ¿Cómo estas?" "2" "3"))
+        (list "BIEN Y TU*" (list "Bien, con ganas de ayudarte"))
+        (list "ADIOS*" (list "Que te vaya bien, fue un placer ayudarte"))
+        )
+  )
+
+
 #|
  Descripcion : Crea el saludo inicial a partir de la hora.
  Dominio     : nada
@@ -182,8 +190,63 @@
 
 (random-integer 10)
 
-  
-  
+
+#|
+ Descripcion : Devuelve un string con unicamente los n últimos elementos
+ Dominio     : string y entero n
+ Recorrido   : entero
+|#
+(define (substring-reverse str n)
+  (define (substring1 lista n i)
+    (if (= i n)
+        lista
+        (substring1 (cdr lista) n (- i 1))))
+  (list->string (substring1 (string->list str) n  (string-length str))))
+
+
+
+#|
+ Descripcion : Funcionque devuelve el ultimo elemento de un arreglo
+ Dominio     : Lista
+ Recorrido   : Elemento que contenga la lista
+|#
+(define (last lista)
+  (if (= (length lista) 1)
+      (car lista)
+      (last (cdr lista))))
+
+
+#|
+ Descripcion : Comprueba si un string contiene al elemento frasedicc
+               Ejemplo: El mensaje "bueno, quiero una pizza" contiene el elemento "*quiero una pizza".
+ Dominio     : string en mensaje y frasedicc, frasedicc debe tener un * antes o despues de lo escrito
+ Recorrido   : Booleano
+|#
+(define (parte? mensaje frasedicc)
+  (if (eq? (last (string->list frasedicc)) #\*)
+      (if (equal? (substring mensaje 0 (string-length frasedicc)) (string-append (substring frasedicc 0 (- (string-length frasedicc) 1)) " "))
+          #t
+          #f)
+      (if (equal? (car  (string->list frasedicc)) #\*)
+          (if (equal? (substring-reverse mensaje (string-length frasedicc)) (string-append " " (substring-reverse frasedicc (- (string-length frasedicc) 1))))
+          #t
+          #f)
+          #f)))
+
+
+
+#|
+ Descripcion :
+ Dominio     :
+ Recorrido   : 
+|#
+(define (devolverFrase mensaje seed diccionario)
+  (if (eq? diccionario '())
+      #f
+      (if (parte? (string-upcase mensaje) (caar diccionario))
+          (list-ref (cadar diccionario) (random-integer (length (cadar diccionario))))
+          (devolverFrase mensaje seed (cdr diccionario))
+          )))
 
 
 
