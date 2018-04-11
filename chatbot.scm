@@ -220,7 +220,7 @@
   (define (substring1 lista n i)
     (if (= i n)
         lista
-        (substring1 (cdr lista) n (- i 1))))(list 1 (list "frase1" "frase2" "frase3" "frase4"))
+        (substring1 (cdr lista) n (- i 1))))
   (list->string (substring1 (string->list str) n  (string-length str))))
 
 
@@ -363,6 +363,7 @@
 
 
 (define log2 (beginDialog (list "CBOT" 1) '() 0))
+(display (devolverFrase "hola" 0 diccionario))
 
 
       

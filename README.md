@@ -1,6 +1,6 @@
 # Chatbot Basado en Scheme
 Primer laboratorio del curso de Paradigmas de programacion del departamento de Ingenieria Informática de la Universidad de Santiago de Chile.
-Realizado en lenguaje [Scheme](https://www.scheme.com/tspl4/).
+Realizado en lenguaje [Scheme](https://www.scheme.com/tspl4/) utilizando el estandar R6RS
 
 
 ## Primeros pasos
