@@ -36,9 +36,12 @@
 
 
 (define diccionario
-  (list (list "HOLA*" (list "Hola, ¿Cómo estas?" "2" "3"))
+  (list (list "*CONCHETUMARE" (list "shhh andai shoro que wea"))
+        (list "HOLA*" (list "Hola, ¿Cómo estas?" "2" "3"))
         (list "BIEN Y TU*" (list "Bien, con ganas de ayudarte"))
         (list "ADIOS*" (list "Que te vaya bien, fue un placer ayudarte"))
+        (list "QUE CUENTAS" (list "1 2 3 4 5 6....."))
+        (list "*REVISAR VUELO" (list "Veamos que tenemos aqui"))
         )
   )
 
@@ -146,7 +149,11 @@
  Recorrido   : Log modificado con el mensaje del usuario y seguido de la respuesta del chatbot
 |#
 (define (sendMessage msg chatbot log seed)
-  (string-append log "\n\n" (hora) " Usuario: " msg "\n" (genRespuesta msg chatbot log seed)))
+  (let ((ans (devolverFrase msg seed diccionario)))
+    (begin
+      (display (string-append "CHATBOT: " ans "\n"))
+      (string-append log "\n\n" (hora) " Usuario: " msg "\n" ans)
+      )))
   
 
 
@@ -224,7 +231,7 @@
 |#
 (define (parte? mensaje frasedicc)
   (if (eq? (last (string->list frasedicc)) #\*)
-      (if (equal? (substring mensaje 0 (string-length frasedicc)) (string-append (substring frasedicc 0 (- (string-length frasedicc) 1)) " "))
+      (if (equal? (substring mensaje 0 (- (string-length frasedicc) 1)) (substring frasedicc 0 (- (string-length frasedicc) 1)))
           #t
           #f)
       (if (equal? (car  (string->list frasedicc)) #\*)
@@ -248,12 +255,54 @@
           (devolverFrase mensaje seed (cdr diccionario))
           )))
 
+(define (devolverAccion mensaje seed diccionario)
+  (if (eq? diccionario '())
+      #f
+      (if (parte? (string-upcase mensaje) (caar diccionario))
+          (caar diccionario)
+          (devolverFrase mensaje seed (cdr diccionario))
+          )))
+
+
+(define (revisarVuelos id log)
+(define (revisarVuelos1 id lista)
+  (if (equal? lista '())
+      #f
+      (if (equal? (car lista) id)
+          (if ( "VUELO:")
+              #t
+              #f)
+          #f)))
+  (revisarVuelos1 id (split log)))
+
+(define log
+  "HOLA id: 12345 VUELO: SCL->ZCO")
+
+
+    
+
+
+
+(define (chat chatbot log seed)
+  (cond ((eq? chatbot #f) (display log))
+        (else (let ((msg (get-line (current-input-port))))
+                      (begin
+                        (display (string-append "USUARIO: " msg "\n"))
+                        (display log)
+                        (chat chatbot (sendMessage msg chatbot log seed) seed )
+                        )
+                )
+              )
+        )
+  )
 
 
 
 
 
 (define cbot '("CHATBOT" 0))
+
+(chat cbot "" 0)
 
 
 
