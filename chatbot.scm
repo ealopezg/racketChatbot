@@ -34,6 +34,14 @@
  Recorrido   : 
 |#
 
+(define log1 (list (list 1 (list "frase11" "frase21" "frase31" "frase41"))
+                   (list 2 (list "frase12" "frase22" "frase32" "frase42"))
+                   (list 3 (list "frase13" "frase23" "frase33" "frase43"))
+                   ))
+
+
+
+
 
 (define diccionario
   (list (list "*CONCHETUMARE" (list "shhh andai shoro que wea"))
@@ -66,26 +74,29 @@
  Recorrido   : Arreglo
 |#
 
-(define (genChatbot nombre personalidad)
-  '(nombre personalidad))
+(define (genChatbot nombre id)
+  '(nombre id))
 
 (define (chatbot? cbot)
   (if (list? cbot)
-      (if (and (string? (car cbot) (number? (cdr cbot))))
+      (if (and (string? (car cbot)) (number? (cadr cbot)))
           #t
           #f)
       #f))
 
-(define (getCbotName cbot)
+(define (getName cbot)
   (if (chatbot? cbot)
       (car cbot)
       #f))
 
-(define (getCbotPer cbot)
+(define (getID cbot)
   (if (chatbot? cbot)
-      (cdr cbot)
-      #f))
+      (cadr cbot)
+      0))
 
+
+(define (genID cbot)
+  (list (getName cbot) (random-integer 10000)))
 
 
 #|
@@ -102,7 +113,12 @@
  Recorrido   : log modificado con el delimitador BEGINDIALOG y el saludo inicial
 |#
 (define (beginDialog chatbot log seed)
-  (string-append log "\n\n" "BEGINDIALOG " (hora) "\n\n" (getCbotName chatbot) ": " (saludoInicial)))
+  (if (= (getID chatbot) 0)
+      (beginDialog (genID chatbot) log seed)
+      (addToLog (getID chatbot) (addToLog (getID chatbot) (addIDToLog (getID chatbot) log) (string-append "beginDialog a las " (hora))) (string-append (hora) " CHATBOT:" (saludoInicial)))
+      )
+  )
+      
 
 
 
@@ -149,11 +165,8 @@
  Recorrido   : Log modificado con el mensaje del usuario y seguido de la respuesta del chatbot
 |#
 (define (sendMessage msg chatbot log seed)
-  (let ((ans (devolverFrase msg seed diccionario)))
-    (begin
-      (display (string-append "CHATBOT: " ans "\n"))
-      (string-append log "\n\n" (hora) " Usuario: " msg "\n" ans)
-      )))
+  (addToLog (getID chatbot) (addToLog (getID chatbot) log msg) (devolverFrase msg seed diccionario)))
+
   
 
 
@@ -207,7 +220,7 @@
   (define (substring1 lista n i)
     (if (= i n)
         lista
-        (substring1 (cdr lista) n (- i 1))))
+        (substring1 (cdr lista) n (- i 1))))(list 1 (list "frase1" "frase2" "frase3" "frase4"))
   (list->string (substring1 (string->list str) n  (string-length str))))
 
 
@@ -275,8 +288,6 @@
           #f)))
   (revisarVuelos1 id (split log)))
 
-(define log
-  "HOLA id: 12345 VUELO: SCL->ZCO")
 
 
     
@@ -298,12 +309,60 @@
 
 
 
+(define (log? lg)
+  (if (equal? lg '())
+      #t
+      (if (list? (car lg))
+          (if (number? (caar lg))
+              (if (list? (cdar lg))
+                  (log? (cdr lg))
+                  #f)
+              #f)
+          #f)
+      )
+  )
+
+
+(define (addIDToLog id log)
+  (append log (list (list id (list )))))
+
+
+(define (addToLog id log str)
+  (if (equal? log '())
+      '()
+  (if (= (caar log) id)
+      (append (list (list (caar log) (append (cadar log) (list str)))) (addToLog id (cdr log) str))
+      (append (list (car log)) (addToLog id (cdr log) str)))))
+
 
 
 (define cbot '("CHATBOT" 0))
 
-(chat cbot "" 0)
 
+(define (lines->string lista)
+  (if (equal? lista '())
+      ""
+      (string-append (car lista) "\n" (lines->string (cdr lista)))))
+
+
+
+
+#|
+ Descripcion : Funcion que transforma un log en string
+ Dominio     : log
+ Recorrido   : string
+|#
+(define (log->string log)
+  (if (equal? log '())
+      ""
+      (if (log? log)
+          (string-append "ID: " (number->string (caar log)) "\n" (lines->string (cadar log)) "\n" (log->string (cdr log)))
+          "")))
+      
+      
+
+
+(define log2 (beginDialog (list "CBOT" 1) '() 0))
 
 
       
