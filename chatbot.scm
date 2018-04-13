@@ -34,24 +34,44 @@
  Recorrido   : 
 |#
 
-(define log1 (list (list 1 (list "frase11" "frase21" "frase31" "frase41"))
-                   (list 2 (list "frase12" "frase22" "frase32" "frase42"))
-                   (list 3 (list "frase13" "frase23" "frase33" "frase43"))
-                   ))
 
 
 
 
 
 (define diccionario
-  (list (list "*CONCHETUMARE" (list "shhh andai shoro que wea"))
-        (list "HOLA*" (list "Hola, ¿Cómo estas?" "2" "3"))
+  (list (list "HOLA*" (list "Hola, ¿Cómo estas?" "2" "3"))
         (list "BIEN Y TU*" (list "Bien, con ganas de ayudarte"))
         (list "ADIOS*" (list "Que te vaya bien, fue un placer ayudarte"))
-        (list "QUE CUENTAS" (list "1 2 3 4 5 6....."))
-        (list "*REVISAR VUELO" (list "Veamos que tenemos aqui"))
+        (list "RECOMIENDA*" (list "Tengo muchas peliculas para recomendarte, pero primero necesito saber tus gustos"))
+        
         )
   )
+
+(define cartelera
+  (list (list "ACCION"(list (cons "Ready Player One: Comienza el Juego" 7.9)
+                            (cons "Pantera Negra" 7.8)
+                            (cons "Rampage: Devastación" 6.6)
+                            (cons "Deseo de Matar" 6.5)
+                            (cons "Mazinger Z: INFINITY" 6.1)
+                            (cons "Titanes del Pacífico: La Insurrección" 5.3)
+                            (cons "Asalto en el Huracán" 4.9)
+                            (cons "Un Viaje en el Tiempo" 3.3)
+                            ))
+        (list "ANIMACION"(list (cons "Coco" 8.5)
+                               (cons "En Este Rincón del Mundo" 7.9)
+                               ))
+        (list "DRAMA"(list (cons "...Y de pronto el amanecer" 8.2)
+                           ))
+        (list "INFANTIL"(list (cons "Coco" 8.5)
+                              (cons "Las travesuras de Peter Rabbit" 6.6)
+                              ))
+        (list "COMEDIA"(list (cons "Swing" 6.8)))
+        (list "TERROR"(list (cons "Un Lugar en Silencio" 7.2)))
+        )
+  )
+        
+              
 
 
 #|
@@ -94,9 +114,14 @@
       (cadr cbot)
       0))
 
+(define (genID cbot log)
+  (define (genID1 cbot log n)
+    (if (equal? log '())
+        (list (getName cbot) n)
+        (genID1 cbot (cdr log) (+ n 1))
+        )) (genID cbot log 0))
 
-(define (genID cbot)
-  (list (getName cbot) (random-integer 10000)))
+           
 
 
 #|
@@ -115,7 +140,7 @@
 (define (beginDialog chatbot log seed)
   (if (= (getID chatbot) 0)
       (beginDialog (genID chatbot) log seed)
-      (addToLog (getID chatbot) (addToLog (getID chatbot) (addIDToLog (getID chatbot) log) (string-append "beginDialog a las " (hora))) (string-append (hora) " CHATBOT:" (saludoInicial)))
+      (addMsgToLog (getID chatbot) (addMsgToLog (getID chatbot) (addIDToLog (getID chatbot) log) (string-append "beginDialog a las " (hora))) (string-append (hora) " " (getName chatbot) ": " (saludoInicial)))
       )
   )
       
@@ -123,16 +148,10 @@
 
 
 #|
-(define (genRespuesta msg chatbot log seed)
-  (if (chatbot? chatbot)
-      (let ((lista (split msg)))
-      (if (= (getCbotPer chatbot) 0)
-          (let ((lista (split msg)))
-            )
+ Descripcion : Funcion que transforma un string en una lista de palabras
+ Dominio     : string
+ Recorrido   : Lista de palabras que conforman el string de entrada
 |#
-
-(define (genRespuesta msg chatbot log seed) #t)
-
 (define (split str)
 (define (split1 lista aux)
      (if (= (length lista) 0)
@@ -145,27 +164,21 @@
   ) (split1 (string->list str) '()))
 
 
-(define (searchWord str palabra)
-  (define (searchWord1 lista palabra)
-    (if (= (length lista) 0)
-        #f
-        (if (eq? (car lista) palabra)
-            #t
-            (searchWord1 (cdr lista) palabra)
-            )
-        )
-    )
-(searchWord1 (split str) palabra))
-
-
        
 #|
  Descripcion : Envia el mensaje del usuario
  Dominio     : mensaje, estructura chatbot, log y seed
  Recorrido   : Log modificado con el mensaje del usuario y seguido de la respuesta del chatbot
 |#
+
 (define (sendMessage msg chatbot log seed)
-  (addToLog (getID chatbot) (addToLog (getID chatbot) log msg) (devolverFrase msg seed diccionario)))
+  (addMsgToLog (getID chatbot) (addMsgToLog (getID chatbot) log (string-append (hora) " USUARIO: " msg)) (string-append (hora) " " (getName chatbot) ": " (devolverFrase msg seed diccionario)) )
+  )
+
+
+
+
+
 
   
 
@@ -242,73 +255,200 @@
  Dominio     : string en mensaje y frasedicc, frasedicc debe tener un * antes o despues de lo escrito
  Recorrido   : Booleano
 |#
+
 (define (parte? mensaje frasedicc)
-  (if (eq? (last (string->list frasedicc)) #\*)
-      (if (equal? (substring mensaje 0 (- (string-length frasedicc) 1)) (substring frasedicc 0 (- (string-length frasedicc) 1)))
-          #t
-          #f)
-      (if (equal? (car  (string->list frasedicc)) #\*)
-          (if (equal? (substring-reverse mensaje (string-length frasedicc)) (string-append " " (substring-reverse frasedicc (- (string-length frasedicc) 1))))
-          #t
-          #f)
-          #f)))
+   (if (>= (string-length mensaje) (- (string-length frasedicc) 1))
+       (cond ( (and (equal? (last (string->list frasedicc)) #\*) (equal? (substring mensaje 0 (- (string-length frasedicc) 1)) (substring frasedicc 0 (- (string-length frasedicc) 1)))) #t)
+             ( (and (equal? (car  (string->list frasedicc)) #\*) (equal? (substring-reverse mensaje (- (string-length frasedicc) 1)) (substring-reverse frasedicc (- (string-length frasedicc) 1)))) #t)
+             (else #f)
+             )
+       #f))
+  
 
 
 
 #|
- Descripcion :
- Dominio     :
- Recorrido   : 
+ Descripcion : Funcion que devuelve una frase que se encuentra en el diccionario, como respuesta a un mensaje
+ Dominio     : string mensaje, seed y diccionario
+ Recorrido   : string con la respuesta
 |#
 (define (devolverFrase mensaje seed diccionario)
   (if (eq? diccionario '())
-      #f
+      "Lo siento, no te entendí muy bien lo que querias decir"
       (if (parte? (string-upcase mensaje) (caar diccionario))
           (list-ref (cadar diccionario) (random-integer (length (cadar diccionario))))
           (devolverFrase mensaje seed (cdr diccionario))
           )))
 
-(define (devolverAccion mensaje seed diccionario)
-  (if (eq? diccionario '())
-      #f
-      (if (parte? (string-upcase mensaje) (caar diccionario))
-          (caar diccionario)
-          (devolverFrase mensaje seed (cdr diccionario))
-          )))
+#|
+ Descripcion : Funcion que genera un usuario
+ Dominio     : strings nombre,genero,pelicula,cine, dia, hora
+ Recorrido   : lista
+|#
+(define (genUsr nombre genero pelicula cine dia hora)
+  (list nombre genero pelicula cine (list dia hora)))
+
+#|
+ Descripcion : Funcion que comprueba si existe un usuario
+ Dominio     : usuario
+ Recorrido   : Booleano
+|#
+(define (usuario? usr)
+  (if (list? usr)
+      (if (and (string? (car usr)) (string? (cadr usr)) (string? (caddr usr)) (string? (cadddr usr)) (list? (car (cddddr usr))))
+          #t
+          #f)
+      #f))
+
+#|
+ Descripcion : Funcion que genera un usuario vacio
+ Dominio     : nada
+ Recorrido   : usuario 
+|#
+(define (genEmptyUsr)
+  (list "" "" "" "" (list "" "")))
+
+#|
+ Descripcion : Funcion que retorna el nombre del usuario
+ Dominio     : usuario
+ Recorrido   : string con el nombre
+|#
+(define (getUsrName usr)
+  (if (usuario? usr)
+      (car usr)
+      #f))
+
+#|
+ Descripcion : Funcion que retorna el genero elegido por el usuario
+ Dominio     : usuario
+ Recorrido   : string con el genero elegido por el usuario
+|#
+(define (getUsrGen usr)
+  (if (usuario? usr)
+      (cadr usr)
+      #f))
+
+#|
+ Descripcion : Funcion que retorna la pelicula elegida por el usuario
+ Dominio     : usuario
+ Recorrido   : string con la pelicula elegida por el usuario
+|#
+(define (getUsrPel usr)
+  (if (usuario? usr)
+      (caddr usr)
+      #f))
+
+#|
+ Descripcion : Funcion que retorna el cine elegido por el usuario
+ Dominio     : usuario
+ Recorrido   : string con el cine elegido por el usuario
+|#
+(define (getUsrCin usr)
+  (if (usuario? usr)
+      (cadddr usr)
+      #f))
+
+#|
+ Descripcion : Funcion que retorna el dia elegido por el usuario
+ Dominio     : usuario
+ Recorrido   : string con el dia elegido por el usuario
+|#
+(define (getUsrDia usr)
+  (if (usuario? usr)
+      (caar (cddddr usr))
+      #f))
+
+#|
+ Descripcion : Funcion que retorna la hora elegida por el usuario
+ Dominio     : usuario
+ Recorrido   : string con la hora elegida por el usuario
+|#
+(define (getUsrHor usr)
+  (if (usuario? usr)
+      (cadar (cddddr usr))
+      #f))
 
 
-(define (revisarVuelos id log)
-(define (revisarVuelos1 id lista)
-  (if (equal? lista '())
-      #f
-      (if (equal? (car lista) id)
-          (if ( "VUELO:")
-              #t
-              #f)
-          #f)))
-  (revisarVuelos1 id (split log)))
-
-
-
-    
-
-
-
-(define (chat chatbot log seed)
-  (cond ((eq? chatbot #f) (display log))
-        (else (let ((msg (get-line (current-input-port))))
-                      (begin
-                        (display (string-append "USUARIO: " msg "\n"))
-                        (display log)
-                        (chat chatbot (sendMessage msg chatbot log seed) seed )
-                        )
-                )
-              )
-        )
+#|
+ Descripcion : Funcion que agrega el nombre al usuario 
+ Dominio     : usuario y string con el nombre
+ Recorrido   : usuario
+|#
+(define (addUsrName usr nombre)
+  (if (usuario? usr)
+      (append (list nombre) (cdr usr))
+      (genEmptyUsr))
   )
 
+#|
+ Descripcion : Funcion que agrega el genero al usuario 
+ Dominio     : usuario y string con el genero
+ Recorrido   : usuario
+|#
+(define (addUsrGen usr genero)
+  (if (usuario? usr)
+      (append (list (car usr)) (list genero) (cddr usr))
+      (genEmptyUsr))
+  )
+
+#|
+ Descripcion : Funcion que agrega el cine al usuario 
+ Dominio     : usuario y string con el cine
+ Recorrido   : usuario
+|#
+(define (addUsrCin usr cine)
+  (if (usuario? usr)
+      (append (list (car usr)) (list (cadr usr)) (list (caddr usr)) (list cine) (cddddr usr))
+      (genEmptyUsr))
+  )
+
+#|
+ Descripcion : Funcion que agrega la pelicula al usuario
+ Dominio     : usuario y string con la pelicula
+ Recorrido   : usuario
+|#
+(define (addUsrPel usr pelicula)
+  (if (usuario? usr)
+      (append (list (car usr)) (list (cadr usr)) (list pelicula) (cdddr usr))
+      (genEmptyUsr))
+  )
+
+#|
+ Descripcion : Funcion que agrega el dia al usuario
+ Dominio     : usuario y string con el dia
+ Recorrido   : usuario
+|#
+(define (addUsrDia usr dia)
+  (if (usuario? usr)
+      (append (list (car usr)) (list (cadr usr)) (list (caddr usr)) (list (cadddr usr)) (list (list dia (cadar (cddddr usr)))))
+      (genEmptyUsr))
+  )
+
+#|
+ Descripcion : Funcion que agrega el horario al usuario
+ Dominio     : usuario y string con el horario
+ Recorrido   : usuario
+|#
+(define (addUsrHor usr horario)
+  (if (usuario? usr)
+      (append (list (car usr)) (list (cadr usr)) (list (caddr usr)) (list (cadddr usr)) (list (list (caar (cddddr usr)) horario)))
+      (genEmptyUsr))
+  )
+
+(define (accion mensaje log id diccionario actual)
+  (if (= (caaar log) id)
+      (
 
 
+
+
+
+
+#|
+ Descripcion : Funcion que comprueba si es o no un log
+ Dominio     : Log
+ Recorrido   : Booleano
+|#
 (define (log? lg)
   (if (equal? lg '())
       #t
@@ -322,17 +462,25 @@
       )
   )
 
-
+#|
+ Descripcion : Funcion que añade el ID al log
+ Dominio     : numero id, y log
+ Recorrido   : log modificado
+|#
 (define (addIDToLog id log)
-  (append log (list (list id (list )))))
+  (append log (list (list (list id (genEmptyUsr)) (list )))))
 
-
-(define (addToLog id log str)
+#|
+ Descripcion : Funcion que añade mensajes al log
+ Dominio     : numero id, log y el mensaje str
+ Recorrido   : log modificado
+|#
+(define (addMsgToLog id log str)
   (if (equal? log '())
       '()
-  (if (= (caar log) id)
-      (append (list (list (caar log) (append (cadar log) (list str)))) (addToLog id (cdr log) str))
-      (append (list (car log)) (addToLog id (cdr log) str)))))
+  (if (= (caaar log) id)
+      (append (list (list (caar log) (append (cadar log) (list str)))) (addMsgToLog id (cdr log) str))
+      (append (list (caar log)) (addMsgToLog id (cdr log) str)))))
 
 
 
@@ -346,6 +494,47 @@
 
 
 
+#|
+ Descripcion : Funcion que recomienda la pelicula mejor calificada del genero escogido
+ Dominio     : string genero, y cartelera
+ Recorrido   : par donde el primer elemento es el nombre de la pelicula y el segundo es el puntaje
+|#
+(define (recomendarPelicula genero cartelera)
+  (if (equal? cartelera '())
+              #f
+              (if (equal? (caar cartelera) genero)
+                  (caadar cartelera)
+                  (recomendarPelicula genero (cdr cartelera))
+                  )
+              )
+  )
+
+#|
+ Descripcion : Funcion que devuelve una lista con todas las peliculas del genero
+ Dominio     : string genero y cartelera
+ Recorrido   : lista de pares donde el primer elemento del par es el nombre de la pelicula y el segundo es el puntaje
+|#
+(define (devolverPeliculas genero cartelera)
+  (if (equal? cartelera '())
+              #f
+              (if (equal? (caar cartelera) genero)
+                  (cadar cartelera)
+                  (devolverPeliculas genero (cdr cartelera))
+                  )
+              )
+  )
+
+#|
+ Descripcion : Funcion que retorna un string en base a una lista de peliculas (recorrido de la funcion (devolverPeliculas)
+ Dominio     : lista de peliculas
+ Recorrido   : string
+|#
+(define (listaPeliculas->string lista)
+  (define (pe->s lista n)
+    (if (equal? lista '())
+        ""
+        (string-append (number->string n) ".- " (caar lista) " (" (number->string (cdar lista)) ")" "\n" (pe->s (cdr lista) (+ n 1)))))
+  (pe->s lista 1))
 
 #|
  Descripcion : Funcion que transforma un log en string
@@ -362,8 +551,10 @@
       
 
 
-(define log2 (beginDialog (list "CBOT" 1) '() 0))
-(display (devolverFrase "hola" 0 diccionario))
+
+
+(define log3 (sendMessage "Me llamo Esteban" (list "CBOT" 1) (sendMessage "que wea te pasa conchetumare" (list "CBOT" 1) (beginDialog (list "CBOT" 1) '() 0) 0) 0))
+
 
 
       
