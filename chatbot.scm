@@ -26,6 +26,7 @@
         (rnrs records inspection (6))          ; R6RS library section 6.4
         (rnrs records syntactic (6))           ; R6RS library section 6.2
         (srfi :19)
+        
         (srfi :27))
 
 #|
@@ -95,7 +96,7 @@
 |#
 
 (define (genChatbot nombre id)
-  '(nombre id))
+  (list nombre id))
 
 (define (chatbot? cbot)
   (if (list? cbot)
@@ -119,7 +120,7 @@
     (if (equal? log '())
         (list (getName cbot) n)
         (genID1 cbot (cdr log) (+ n 1))
-        )) (genID cbot log 0))
+        )) (genID1 cbot log 0))
 
            
 
@@ -130,7 +131,7 @@
  Recorrido   : Hora actual como string DIA/MES/AÑO HORA:MINUTOS:SEGUNDOS
 |#
 (define (hora)
-  (date->string (current-date) "~d/~m/~Y ~H:~M:~S")) 
+  (date->string (current-date) "[~d/~m/~Y ~H:~M:~S]")) 
 
 #|
  Descripcion : Comienza una nueva conversacion
@@ -138,11 +139,15 @@
  Recorrido   : log modificado con el delimitador BEGINDIALOG y el saludo inicial
 |#
 (define (beginDialog chatbot log seed)
-  (if (= (getID chatbot) 0)
-      (beginDialog (genID chatbot) log seed)
+  (if (= (getID chatbot) -1)
+      (beginDialog (genID chatbot log) log seed)
       (addMsgToLog (getID chatbot) (addMsgToLog (getID chatbot) (addIDToLog (getID chatbot) log) (string-append "beginDialog a las " (hora))) (string-append (hora) " " (getName chatbot) ": " (saludoInicial)))
       )
   )
+
+
+(define (endDialog chatbot log seed)
+  (addMsgToLog (getID chatbot) log (string-append "endDialog a las " (hora))))
       
 
 
@@ -172,7 +177,7 @@
 |#
 
 (define (sendMessage msg chatbot log seed)
-  (addMsgToLog (getID chatbot) (addMsgToLog (getID chatbot) log (string-append (hora) " USUARIO: " msg)) (string-append (hora) " " (getName chatbot) ": " (devolverFrase msg seed diccionario)) )
+  (accion msg chatbot log seed)
   )
 
 
@@ -276,7 +281,10 @@
   (if (eq? diccionario '())
       "Lo siento, no te entendí muy bien lo que querias decir"
       (if (parte? (string-upcase mensaje) (caar diccionario))
-          (list-ref (cadar diccionario) (random-integer (length (cadar diccionario))))
+          (let ((ans (list-ref (cadar diccionario) (random-integer (length (cadar diccionario))))))
+            (begin
+              (display ans)
+            ans))
           (devolverFrase mensaje seed (cdr diccionario))
           )))
 
@@ -380,6 +388,15 @@
       (genEmptyUsr))
   )
 
+(define (getUsrNameL id log)
+  (if (equal? log '())
+      "USUARIO"
+      (if (= (caaar log) id)
+          (if (equal? (getUsrName (cadaar log)) "")
+              "USUARIO"
+              (getUsrName (cadaar log)))
+          (getUsrNameL id (cdr log)))))
+
 #|
  Descripcion : Funcion que agrega el genero al usuario 
  Dominio     : usuario y string con el genero
@@ -435,13 +452,41 @@
       (genEmptyUsr))
   )
 
-(define (accion mensaje log id diccionario actual)
-  (if (= (caaar log) id)
-      (
+(define (lastMsg id log)
+  (if (equal? log '())
+      ""
+      (if (= (caaar log) id)
+          (substring (last (cadar log)) 22)
+          (lastMsg id (cdr log)))))
+          
+          
+(define (addListMsgToLog id log lista)
+  (if (equal? lista '())
+      log
+      (addListMsgToLog id (addMsgToLog id log (car lista))  (cdr lista))))
 
 
 
+(define (accion mensaje chatbot log seed)
+  (let ((mensajeUP (string-upcase mensaje)))
+  (cond ( (parte? mensajeUP "RECOMIENDA*") (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                                                      (string-append (hora) " " (getName chatbot) ": ¿Qué genero te gusta?"))))
+        ( (and (not (equal? (encontrarGenero mensaje) #f)) (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": ¿Qué genero te gusta?"))) (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                                                                                                                                              (string-append (hora) " " (getName chatbot) ": Qué Bien, te recomiendo la pelicula '" (car (recomendarPelicula (encontrarGenero mensaje) cartelera)) "' que tiene una puntuacion de " (number->string (cdr (recomendarPelicula (encontrarGenero mensaje) cartelera))) ))))
+        (else (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje) (string-append (hora) " " (getName chatbot) ": No te entendí muy bien, repitelo")))))))
+      
 
+(define (modificarUsrL log id newUsr)
+  (
+
+
+(define (encontrarGenero mensaje)
+  (cond ( (parte? (string-upcase mensaje) "TERROR*") "TERROR")
+        ( (parte? (string-upcase mensaje) "ACCION*") "ACCION")
+        ( (parte? (string-upcase mensaje) "ANIMACION*") "ANIMACION")
+        ( (parte? (string-upcase mensaje) "DRAMA*") "DRAMA")
+        ( (parte? (string-upcase mensaje) "COMEDIA*") "COMEDIA")
+        (else #f)))
 
 
 #|
@@ -453,7 +498,7 @@
   (if (equal? lg '())
       #t
       (if (list? (car lg))
-          (if (number? (caar lg))
+          (if (and (number? (caaar lg)) (usuario? (cadaar log)))
               (if (list? (cdar lg))
                   (log? (cdr lg))
                   #f)
@@ -545,16 +590,22 @@
   (if (equal? log '())
       ""
       (if (log? log)
-          (string-append "ID: " (number->string (caar log)) "\n" (lines->string (cadar log)) "\n" (log->string (cdr log)))
+          (string-append "ID: " (number->string (caaar log)) "\n" (lines->string (cadar log)) "\n" (log->string (cdr log)))
           "")))
       
       
 
 
 
+;(define log3 (sendMessage "Me llamo Esteban" (list "CBOT" 1) (sendMessage "que wea te pasa conchetumare" (list "CBOT" 1) (beginDialog (list "CBOT" 1) '() 0) 0) 0))
 
-(define log3 (sendMessage "Me llamo Esteban" (list "CBOT" 1) (sendMessage "que wea te pasa conchetumare" (list "CBOT" 1) (beginDialog (list "CBOT" 1) '() 0) 0) 0))
 
+(define (chat mensaje chatbot log seed)
+  (if (equal? mensaje "ADIOS")
+      (display (log->string (endDialog chatbot log seed)))
+      (let ((msg (read)))
+        (chat msg chatbot (sendMessage msg chatbot log seed) seed))))
+      
 
 
       
