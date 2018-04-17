@@ -49,8 +49,15 @@
         )
   )
 
+
+
+
+
+
+
+
 (define cartelera
-  (list (list "ACCION"(list (list "Ready Player One: Comienza el Juego" 7.9)
+  (list (list "ACCION"(list (list "Ready Player One: Comienza el Juego" 7.9 (list "Lunes" "Martes" "Miercoles" "Jueves"))
                             (list "Pantera Negra" 7.8)
                             (list "Rampage: Devastación" 6.6)
                             (list "Deseo de Matar" 6.5)
