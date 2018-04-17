@@ -44,30 +44,31 @@
         (list "BIEN Y TU*" (list "Bien, con ganas de ayudarte"))
         (list "ADIOS*" (list "Que te vaya bien, fue un placer ayudarte"))
         (list "RECOMIENDA*" (list "Tengo muchas peliculas para recomendarte, pero primero necesito saber tus gustos"))
+        (list "*TU NOMBRE" (list "Mi nombre es secreto" "Chupame el pico"))
         
         )
   )
 
 (define cartelera
-  (list (list "ACCION"(list (cons "Ready Player One: Comienza el Juego" 7.9)
-                            (cons "Pantera Negra" 7.8)
-                            (cons "Rampage: Devastación" 6.6)
-                            (cons "Deseo de Matar" 6.5)
-                            (cons "Mazinger Z: INFINITY" 6.1)
-                            (cons "Titanes del Pacífico: La Insurrección" 5.3)
-                            (cons "Asalto en el Huracán" 4.9)
-                            (cons "Un Viaje en el Tiempo" 3.3)
+  (list (list "ACCION"(list (list "Ready Player One: Comienza el Juego" 7.9)
+                            (list "Pantera Negra" 7.8)
+                            (list "Rampage: Devastación" 6.6)
+                            (list "Deseo de Matar" 6.5)
+                            (list "Mazinger Z: INFINITY" 6.1)
+                            (list "Titanes del Pacífico: La Insurrección" 5.3)
+                            (list "Asalto en el Huracán" 4.9)
+                            (list "Un Viaje en el Tiempo" 3.3)
                             ))
-        (list "ANIMACION"(list (cons "Coco" 8.5)
-                               (cons "En Este Rincón del Mundo" 7.9)
+        (list "ANIMACION"(list (list "Coco" 8.5)
+                               (list "En Este Rincón del Mundo" 7.9)
                                ))
-        (list "DRAMA"(list (cons "...Y de pronto el amanecer" 8.2)
+        (list "DRAMA"(list (list "...Y de pronto el amanecer" 8.2)
                            ))
-        (list "INFANTIL"(list (cons "Coco" 8.5)
-                              (cons "Las travesuras de Peter Rabbit" 6.6)
+        (list "INFANTIL"(list (list "Coco" 8.5)
+                              (list "Las travesuras de Peter Rabbit" 6.6)
                               ))
-        (list "COMEDIA"(list (cons "Swing" 6.8)))
-        (list "TERROR"(list (cons "Un Lugar en Silencio" 7.2)))
+        (list "COMEDIA"(list (list "Swing" 6.8)))
+        (list "TERROR"(list (list "Un Lugar en Silencio" 7.2)))
         )
   )
         
@@ -120,6 +121,9 @@
         (genID1 cbot (cdr log) (+ n 1))
         )) (genID1 cbot log 0))
 
+
+;(define (elegirAzar 
+
            
 
 
@@ -159,23 +163,23 @@
  Dominio     : string
  Recorrido   : Lista de palabras que conforman el string de entrada
 |#
-(define (split str)
-(define (split1 lista aux)
+(define (split str e)
+(define (split1 lista aux e)
      (if (= (length lista) 0)
          (list (list->string aux))
-         (if (eq? (car lista) #\space)
-             (append (list (list->string aux)) (split1 (cdr lista) '()))
-             (split1 (cdr lista) (append aux (list (car lista))))
+         (if (eq? (car lista) e)
+             (append (list (list->string aux)) (split1 (cdr lista) '() e))
+             (split1 (cdr lista) (append aux (list (car lista))) e)
              )
          )
-  ) (split1 (string->list str) '()))
+  ) (split1 (string->list str) '() e))
 
 
        
 #|
  Descripcion : Envia el mensaje del usuario
  Dominio     : mensaje, estructura chatbot, log y seed
- Recorrido   : Log modificado con el mensaje del usuario y seguido de la respuesta del chatbot
+ Recorrido   : Log modificado con el mensaje del usuario y seguido de la respuesta del chatbot******CAMBIAR ESTA WEA
 |#
 
 (define (sendMessage msg chatbot log seed)
@@ -228,7 +232,6 @@
 (define (randomInt seed n)
   (modulo (list-ref (randomList seed) (/ 32768 2)) n))
 
-(random-integer 10)
 
 
 #|
@@ -284,9 +287,7 @@
       "Lo siento, no te entendí muy bien lo que querias decir"
       (if (parte? (string-upcase mensaje) (caar diccionario))
           (let ((ans (list-ref (cadar diccionario) (random-integer (length (cadar diccionario))))))
-            (begin
-              (display ans)
-            ans))
+            ans)
           (devolverFrase mensaje seed (cdr diccionario))
           )))
 
@@ -388,6 +389,16 @@
   (if (usuario? usr)
       (append (list nombre) (cdr usr))
       (genEmptyUsr))
+  )
+
+(define (addUsrNameL id nombre log)
+   (if (equal? log '())
+        '()
+       (if (= (caaar log) id)
+           (append (list (list (list id (addUsrName (cadaar log) nombre)) (cadar log))) (addUsrNameL id nombre (cdr log)))
+           (append (list (car log)) (addUsrNameL id nombre (cdr log)))
+           )
+       )
   )
 
 #|
@@ -562,31 +573,33 @@
         
         ( (and (not (equal? (encontrarGenero mensaje) #f)) (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": ¿Qué genero te gusta?")))
           (addUsrPelL (getID chatbot) (car (recomendarPelicula (encontrarGenero mensaje) cartelera)) (addUsrGeneL (getID chatbot) (encontrarGenero mensaje) (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
-                                                                                                            (string-append (hora) " " (getName chatbot) ": Qué Bien, te recomiendo la pelicula '" (car (recomendarPelicula (encontrarGenero mensaje) cartelera)) "' que tiene una puntuacion de " (number->string (cdr (recomendarPelicula (encontrarGenero mensaje) cartelera))))
+                                                                                                            (string-append (hora) " " (getName chatbot) ": Qué Bien, te recomiendo la pelicula '" (car (recomendarPelicula (encontrarGenero mensaje) cartelera)) "' que tiene una puntuacion de " (number->string (cadr (recomendarPelicula (encontrarGenero mensaje) cartelera))))
                                                                                                             (string-append (hora) " " (getName chatbot) ": ¿Deseas comprar entradas?")))
                        )
           ))
 
         ;( (and (equal? (lastMsgFrom (getName chatbot) log) "¿Deseas comprar entradas?") (parte? mensajeUP "SI*"))
-         ; (getUsrNameL (getID chatbot) log)
+         
 
         ( (and (equal? (lastMsgFrom (getName chatbot) (getID chatbot) log) "¿Deseas comprar entradas?") (parte? mensajeUP "NO*"))
           (endDialog chatbot (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
                                                                         (string-append (hora) " " (getName chatbot) ": Adios, fue un placer ayudarte"))) seed))
+        ;( (and
+        
           
 
         
-        ( (or (parte? mensajeUP "ADIOS*") (parte? mensajeUP "RECOMIENDA*"))
+        ( (or (parte? mensajeUP "ADIOS*") (parte? mensajeUP "CHAO*"))
           (endDialog chatbot (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
                                                                         (string-append (hora) " " (getName chatbot) ": Adios, fue un placer ayudarte"))) seed)
           )
         
         (else (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
-                                                         (string-append (hora) " " (getName chatbot) ": No te entendí muy bien, repitelo")))
+                                                         (string-append (hora) " " (getName chatbot) ": No te entendí muy bien...." (lastMsgFrom (getName chatbot) (getID chatbot) log) ))
               )
         )
     )
-  )
+  ))
       
 
 ;(define (modificarUsrL log id newUsr)
@@ -701,11 +714,12 @@
           "")))
 
 
-      
 
 
 
-(define log3 (sendMessage "No" (list "CBOT" 1) (sendMessage "Terror" (list "CBOT" 1) (sendMessage "Recomiendame una pelicula" (list "CBOT" 1) (beginDialog (list "CBOT" 1) '() 0) 0) 0) 0))
+
+
+(define log3 (sendMessage "callateQL" (list "CBOT" 1) (sendMessage "chupa el pico" (list "CBOT" 1) (sendMessage "Drama" (list "CBOT" 1) (sendMessage "Recomiendame una pelicula" (list "CBOT" 1) (beginDialog (list "CBOT" 1) '() 0) 0) 0) 0) 0))
 
 
 
