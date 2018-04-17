@@ -26,7 +26,6 @@
         (rnrs records inspection (6))          ; R6RS library section 6.4
         (rnrs records syntactic (6))           ; R6RS library section 6.2
         (srfi :19)
-        
         (srfi :27))
 
 #|
@@ -94,7 +93,6 @@
  Dominio     : String con el nombre y entero con la personalidad
  Recorrido   : Arreglo
 |#
-
 (define (genChatbot nombre id)
   (list nombre id))
 
@@ -145,7 +143,11 @@
       )
   )
 
-
+#|
+ Descripcion : Funcion que finaliza el chat
+ Dominio     : chatbot log y seed
+ Recorrido   : log modificado
+|#
 (define (endDialog chatbot log seed)
   (addMsgToLog (getID chatbot) log (string-append "endDialog a las " (hora))))
       
@@ -244,7 +246,7 @@
 
 
 #|
- Descripcion : Funcionque devuelve el ultimo elemento de un arreglo
+ Descripcion : Funcion que devuelve el ultimo elemento de un arreglo
  Dominio     : Lista
  Recorrido   : Elemento que contenga la lista
 |#
@@ -388,6 +390,11 @@
       (genEmptyUsr))
   )
 
+#|
+ Descripcion : Funcion que devuelve el nombre de usuario de la conversacion id
+ Dominio     : id y log
+ Recorrido   : string con el nombre de usuario, en el caso de que no exista nombre se utiliza usuario
+|#
 (define (getUsrNameL id log)
   (if (equal? log '())
       "USUARIO"
@@ -402,10 +409,27 @@
  Dominio     : usuario y string con el genero
  Recorrido   : usuario
 |#
-(define (addUsrGen usr genero)
+(define (addUsrGene usr genero)
   (if (usuario? usr)
       (append (list (car usr)) (list genero) (cddr usr))
       (genEmptyUsr))
+  )
+
+
+
+#|
+ Descripcion : Funcion que agrega el genero al usuario id del log
+ Dominio     : log id y string con el genero
+ Recorrido   : log modificado
+|#
+(define (addUsrGeneL id genero log)
+   (if (equal? log '())
+        '()
+       (if (= (caaar log) id)
+           (append (list (list (list id (addUsrGene (cadaar log) genero)) (cadar log))) (addUsrGeneL id genero (cdr log)))
+           (append (list (car log)) (addUsrGeneL id genero (cdr log)))
+           )
+       )
   )
 
 #|
@@ -419,6 +443,16 @@
       (genEmptyUsr))
   )
 
+(define (addUsrCinL id cine log)
+   (if (equal? log '())
+        '()
+       (if (= (caaar log) id)
+           (append (list (list (list id (addUsrCin (cadaar log) cine)) (cadar log))) (addUsrCinL id cine (cdr log)))
+           (append (list (car log)) (addUsrCinL id cine (cdr log)))
+           )
+       )
+  )
+
 #|
  Descripcion : Funcion que agrega la pelicula al usuario
  Dominio     : usuario y string con la pelicula
@@ -428,6 +462,17 @@
   (if (usuario? usr)
       (append (list (car usr)) (list (cadr usr)) (list pelicula) (cdddr usr))
       (genEmptyUsr))
+  )
+
+
+(define (addUsrPelL id pelicula log)
+   (if (equal? log '())
+        '()
+       (if (= (caaar log) id)
+           (append (list (list (list id (addUsrPel (cadaar log) pelicula)) (cadar log))) (addUsrPelL id pelicula (cdr log)))
+           (append (list (car log)) (addUsrPelL id pelicula (cdr log)))
+           )
+       )
   )
 
 #|
@@ -441,16 +486,41 @@
       (genEmptyUsr))
   )
 
+
+(define (addUsrDiaL log id dia)
+   (if (equal? log '())
+        '()
+       (if (= (caaar log) id)
+           (append (list (list (list id (addUsrDia (cadaar log) dia)) (cadar log))) (addUsrDiaL (cdr log) id dia))
+           (append (list (car log)) (addUsrDiaL (cdr log) id dia))
+           )
+       )
+  )
+
+
 #|
  Descripcion : Funcion que agrega el horario al usuario
- Dominio     : usuario y string con el horario
+ Dominio     : usuario y string con la hora
  Recorrido   : usuario
 |#
-(define (addUsrHor usr horario)
+(define (addUsrHor usr hora)
   (if (usuario? usr)
-      (append (list (car usr)) (list (cadr usr)) (list (caddr usr)) (list (cadddr usr)) (list (list (caar (cddddr usr)) horario)))
+      (append (list (car usr)) (list (cadr usr)) (list (caddr usr)) (list (cadddr usr)) (list (list (caar (cddddr usr)) hora)))
       (genEmptyUsr))
   )
+
+(define (addUsrHorL log id hora)
+   (if (equal? log '())
+        '()
+       (if (= (caaar log) id)
+           (append (list (list (list id (addUsrHor (cadaar log) hora)) (cadar log))) (addUsrHorL (cdr log) id hora))
+           (append (list (car log)) (addUsrHorL (cdr log) id hora))
+           )
+       )
+  )
+
+
+
 
 (define (lastMsg id log)
   (if (equal? log '())
@@ -458,6 +528,21 @@
       (if (= (caaar log) id)
           (substring (last (cadar log)) 22)
           (lastMsg id (cdr log)))))
+
+(define (lastMsgFromNameList name lista)
+  (if (equal? lista '())
+      ""
+      (if (parte? (substring (car lista) 22) (string-append name "*"))
+          (substring (car lista) (+ 22 (string-length name) 2))
+          (lastMsgFromNameList name (cdr lista)))))
+
+(define (lastMsgFrom name id log)
+  (if (equal? log '())
+      ""
+      (if (= (caaar log) id)
+          (lastMsgFromNameList name (reverse (cadar log)))
+          (lastMsg id (cdr log)))))
+  
           
           
 (define (addListMsgToLog id log lista)
@@ -469,15 +554,43 @@
 
 (define (accion mensaje chatbot log seed)
   (let ((mensajeUP (string-upcase mensaje)))
-  (cond ( (parte? mensajeUP "RECOMIENDA*") (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
-                                                                                      (string-append (hora) " " (getName chatbot) ": ¿Qué genero te gusta?"))))
-        ( (and (not (equal? (encontrarGenero mensaje) #f)) (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": ¿Qué genero te gusta?"))) (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
-                                                                                                                                                                              (string-append (hora) " " (getName chatbot) ": Qué Bien, te recomiendo la pelicula '" (car (recomendarPelicula (encontrarGenero mensaje) cartelera)) "' que tiene una puntuacion de " (number->string (cdr (recomendarPelicula (encontrarGenero mensaje) cartelera))) ))))
-        (else (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje) (string-append (hora) " " (getName chatbot) ": No te entendí muy bien, repitelo")))))))
+  (cond ( (parte? mensajeUP "RECOMIENDA*")
+          (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                     (string-append (hora) " " (getName chatbot) ": ¿Qué genero te gusta?")))
+          )
+
+        
+        ( (and (not (equal? (encontrarGenero mensaje) #f)) (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": ¿Qué genero te gusta?")))
+          (addUsrPelL (getID chatbot) (car (recomendarPelicula (encontrarGenero mensaje) cartelera)) (addUsrGeneL (getID chatbot) (encontrarGenero mensaje) (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                                                                            (string-append (hora) " " (getName chatbot) ": Qué Bien, te recomiendo la pelicula '" (car (recomendarPelicula (encontrarGenero mensaje) cartelera)) "' que tiene una puntuacion de " (number->string (cdr (recomendarPelicula (encontrarGenero mensaje) cartelera))))
+                                                                                                            (string-append (hora) " " (getName chatbot) ": ¿Deseas comprar entradas?")))
+                       )
+          ))
+
+        ;( (and (equal? (lastMsgFrom (getName chatbot) log) "¿Deseas comprar entradas?") (parte? mensajeUP "SI*"))
+         ; (getUsrNameL (getID chatbot) log)
+
+        ( (and (equal? (lastMsgFrom (getName chatbot) (getID chatbot) log) "¿Deseas comprar entradas?") (parte? mensajeUP "NO*"))
+          (endDialog chatbot (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                                        (string-append (hora) " " (getName chatbot) ": Adios, fue un placer ayudarte"))) seed))
+          
+
+        
+        ( (or (parte? mensajeUP "ADIOS*") (parte? mensajeUP "RECOMIENDA*"))
+          (endDialog chatbot (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                                        (string-append (hora) " " (getName chatbot) ": Adios, fue un placer ayudarte"))) seed)
+          )
+        
+        (else (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                         (string-append (hora) " " (getName chatbot) ": No te entendí muy bien, repitelo")))
+              )
+        )
+    )
+  )
       
 
-(define (modificarUsrL log id newUsr)
-  (
+;(define (modificarUsrL log id newUsr)
+ ; (
 
 
 (define (encontrarGenero mensaje)
@@ -495,17 +608,11 @@
  Recorrido   : Booleano
 |#
 (define (log? lg)
-  (if (equal? lg '())
+  (if (and (= (length lg) 1) (list? (car lg)) (number? (caaar lg)) (usuario? (cadaar lg)) (list? (cadar lg)))
       #t
-      (if (list? (car lg))
-          (if (and (number? (caaar lg)) (usuario? (cadaar log)))
-              (if (list? (cdar lg))
-                  (log? (cdr lg))
-                  #f)
-              #f)
-          #f)
-      )
-  )
+      (if (and (= (length lg) 1) (list? (car lg)) (number? (caaar lg)) (usuario? (cadaar lg)) (list? (cadar lg)))
+          (log? (cdr lg))
+          #f)))
 
 #|
  Descripcion : Funcion que añade el ID al log
@@ -592,20 +699,14 @@
       (if (log? log)
           (string-append "ID: " (number->string (caaar log)) "\n" (lines->string (cadar log)) "\n" (log->string (cdr log)))
           "")))
+
+
       
-      
 
 
 
-;(define log3 (sendMessage "Me llamo Esteban" (list "CBOT" 1) (sendMessage "que wea te pasa conchetumare" (list "CBOT" 1) (beginDialog (list "CBOT" 1) '() 0) 0) 0))
+(define log3 (sendMessage "No" (list "CBOT" 1) (sendMessage "Terror" (list "CBOT" 1) (sendMessage "Recomiendame una pelicula" (list "CBOT" 1) (beginDialog (list "CBOT" 1) '() 0) 0) 0) 0))
 
-
-(define (chat mensaje chatbot log seed)
-  (if (equal? mensaje "ADIOS")
-      (display (log->string (endDialog chatbot log seed)))
-      (let ((msg (read)))
-        (chat msg chatbot (sendMessage msg chatbot log seed) seed))))
-      
 
 
       
