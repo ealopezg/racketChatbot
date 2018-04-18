@@ -91,10 +91,12 @@
           (member? elemento (cdr lista)))))
       
 
-(define listaHorarios (list "9:15" "9:50" "11:30" "13:45" "14:20" "17:50" "21:30" "22:15" "23:40"))
+(define listaHorarios (list (cons 13 15) (cons 9 15) (cons 22 15) (cons 9 50) (cons 9 50) (cons 21 30)  (cons 11 30)  (cons 14 20) (cons 17 50)  (cons 23 40)))
 
-(define (generarCarteleraHorarios cartelera seed)
-  (
+(define listaH (reverse listaHorarios))
+
+;(define (generarCarteleraHorarios cartelera seed)
+ ; (
 
 
 
@@ -118,8 +120,65 @@
         (append (list (elegirAlgunos listaHorarios (remainder (random seed) 9) (random seed))) (generarHor1 (random seed) (+ dia 1)))))
   (generarHor1 seed 0))
       
-(define (sortHorario lista)
-  (
+(define (sortHor lista)
+  (if (= (length lista) 1)
+      lista
+      (if (= (length lista) 2)
+          (cond ((or (> (caar lista) (caadr lista)) (and (= (caar lista) (caadr lista)) (>= (cdar lista) (cdadr lista))) (and (= (caar lista) (caadr lista)) (>= (cdar lista) (cdadr lista)))) lista)
+                ((or (< (caar lista) (caadr lista)) (and (= (caar lista) (caadr lista)) (< (cdar lista) (cdadr lista)))) (list (cadr lista) (car lista))))
+          (append (sortHor (sublista lista 0 (/ (length lista) 2))) (sortHor (sublista lista (/ (length lista) 2) (length lista)))))))
+
+
+(define (mayores lista n)
+  (if (= (length lista) 0)
+      '()
+      (if (or (> (caar lista) (car n)) (and (= (caar lista) (car n)) (>= (cdar lista) (cdr n))))
+          (append (list (car lista)) (mayores (cdr lista) n))
+          (mayores (cdr lista) n))))
+
+(define (menores lista n)
+  (if (= (length lista) 0)
+      '()
+      (if (<= (caar lista) (car n))
+          (append (list (car lista)) (menores (cdr lista) n))
+          (menores (cdr lista) n))))
+
+
+
+
+(define (quickSort lista)
+  (define (qS lista)
+    (if (= (length lista) 0)
+        '()
+        (if (= (length lista) 1)
+            lista
+        (if (= (length lista) 2)
+            (if (or (> (caadr lista) (caar lista)) (and (= (caadr lista) (caar lista)) (>= (cdadr lista) (cdar lista))))
+                lista
+                (list (cadr lista) (car lista)))
+            (append (qS (menores (cdr lista) (car lista))) (list (car lista)) (qS (mayores (cdr lista) (car lista))))))))
+  (qS lista))
+
+
+
+
+(define (ordenar lista)
+  (if (or (> (caadr lista) (caar lista)) (and (= (caadr lista) (caar lista)) (>= (cdadr lista) (cdar lista))))
+      lista
+      (list (cadr lista) (car lista))))
+                  
+
+
+                  
+(define (sublista lista j k)
+  (define (sub1 lista j k i)
+    (if (or (and (> i k)) (equal? lista '()))
+        '()
+        (if (and (>= i j) (< i k))
+            (append (list (car lista)) (sub1 (cdr lista) j k (+ 1 i)))
+            (sub1 (cdr lista) j k (+ 1 i)))))
+  (sub1 lista j k 0)
+  )
 
 
 #|
@@ -604,8 +663,6 @@
                        )
           ))
 
-        ;( (and (equal? (lastMsgFrom (getName chatbot) log) "¿Deseas comprar entradas?") (parte? mensajeUP "SI*"))
-         
 
         ( (and (equal? (lastMsgFrom (getName chatbot) (getID chatbot) log) "¿Deseas comprar entradas?") (parte? mensajeUP "NO*"))
           (endDialog chatbot (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
@@ -761,7 +818,7 @@
 
 
 
-(define log3 (sendMessage "cine norte" (list "CBOT" 1) (sendMessage "Si" (list "CBOT" 1) (sendMessage "chupa el pico" (list "CBOT" 1) (sendMessage "Drama" (list "CBOT" 1) (sendMessage "Recomiendame una pelicula" (list "CBOT" 1) (beginDialog (list "CBOT" 1) '() 0) 0) 0) 0) 0) 0))
+;(define log3 (sendMessage "cine norte" (list "CBOT" 1) (sendMessage "Si" (list "CBOT" 1) (sendMessage "chupa el pico" (list "CBOT" 1) (sendMessage "accion" (list "CBOT" 1) (sendMessage "Recomiendame una pelicula" (list "CBOT" 1) (beginDialog (list "CBOT" 1) '() 0) 0) 0) 0) 0) 0))
 
 
 
