@@ -57,7 +57,7 @@
 
 
 (define cartelera
-  (list (list "ACCION"(list (list "Ready Player One: Comienza el Juego" 7.9 (list "Lunes" "Martes" "Miercoles" "Jueves"))
+  (list (list "ACCION"(list (list "Ready Player One: Comienza el Juego" 7.9)
                             (list "Pantera Negra" 7.8)
                             (list "Rampage: Devastación" 6.6)
                             (list "Deseo de Matar" 6.5)
@@ -78,8 +78,48 @@
         (list "TERROR"(list (list "Un Lugar en Silencio" 7.2)))
         )
   )
-        
-              
+
+(define (getHorario usuario cartelera)
+  (if (equal? cartelera '())
+      #f))
+
+(define (member? elemento lista)
+  (if (equal? lista '())
+      #f
+      (if (equal? (car lista) elemento)
+          #t
+          (member? elemento (cdr lista)))))
+      
+
+(define listaHorarios (list "9:15" "9:50" "11:30" "13:45" "14:20" "17:50" "21:30" "22:15" "23:40"))
+
+(define (generarCarteleraHorarios cartelera seed)
+  (
+
+
+
+(define (elegirAlgunos lista n seed)
+  (define (elegirAlgun1 lista n i seed listaAux)
+    (if (= i n)
+        listaAux
+        (let ((seleccion (elegir seed lista)))
+          (if (member? seleccion listaAux)
+              (elegirAlgun1 lista n i (random seed) listaAux)
+              (elegirAlgun1 lista n (+ 1 i) (random seed) (append listaAux (list seleccion)))
+              )
+          )
+        )
+    )(elegirAlgun1 lista n 0 seed '()))
+
+(define (generarHorarios seed)
+  (define (generarHor1 seed dia)
+    (if (= dia 7)
+        '()
+        (append (list (elegirAlgunos listaHorarios (remainder (random seed) 9) (random seed))) (generarHor1 (random seed) (+ dia 1)))))
+  (generarHor1 seed 0))
+      
+(define (sortHorario lista)
+  (
 
 
 #|
@@ -87,11 +127,11 @@
  Dominio     : nada
  Recorrido   : string con el saludo dependiendo de la hora actual.
 |#
-(define (saludoInicial)
-     (cond ((>= (string->number (date->string (current-date) "~H") ) 21) "Buenas noches, en que lo puedo ayudar ?")
-           ((<= (string->number (date->string (current-date) "~H") ) 6) "Buenas noches, en que lo puedo ayudar a esta hora de la madrugada?")
-           ((<= (string->number (date->string (current-date) "~H") ) 11) "Buenos dias, en que lo puedo ayudar a esta hora?")
-           ((<= (string->number (date->string (current-date) "~H") ) 20) "Buenos tardes, en que lo puedo ayudar a esta hora?")
+(define (saludoInicial seed)
+     (cond ((>= (string->number (date->string (current-date) "~H") ) 21) (elegir seed (list "Buenas noches, en que lo puedo ayudar ?" "Hola que tal, que buena noche para ver ir al cine o no?, Que necesitas?")))
+           ((<= (string->number (date->string (current-date) "~H") ) 6) (elegir seed (list "Buenas noches, en que lo puedo ayudar a esta hora de la madrugada?" "Aunque sea tarde igual te puedo atender, las maquinas no duermen.Dime...En que te ayudo?")))
+           ((<= (string->number (date->string (current-date) "~H") ) 11) (elegir seed (list "Buenos dias, en que lo puedo ayudar a esta hora?" "Hola, muy buenos dias, estoy aqui para ayudarte. Qué necesitas?")))
+           ((<= (string->number (date->string (current-date) "~H") ) 20) (elegir seed (list "Buenos tardes, en que lo puedo ayudar a esta hora?" "Hola, muy buenas tardes, estoy aqui para ayudarte. Qué necesitas?")))
            )
   )
 
@@ -129,7 +169,12 @@
         )) (genID1 cbot log 0))
 
 
-;(define (elegirAzar 
+(define (elegir seed lista)
+  (define (elegir1 lista i n)
+    (if (= i n)
+        (car lista)
+        (elegir1 (cdr lista) (+ i 1) n)))
+  (elegir1 lista 0 (remainder (random seed) (length lista)))) 
 
            
 
@@ -150,7 +195,7 @@
 (define (beginDialog chatbot log seed)
   (if (= (getID chatbot) -1)
       (beginDialog (genID chatbot log) log seed)
-      (addMsgToLog (getID chatbot) (addMsgToLog (getID chatbot) (addIDToLog (getID chatbot) log) (string-append "beginDialog a las " (hora))) (string-append (hora) " " (getName chatbot) ": " (saludoInicial)))
+      (addMsgToLog (getID chatbot) (addMsgToLog (getID chatbot) (addIDToLog (getID chatbot) log) (string-append "beginDialog a las " (hora))) (string-append (hora) " " (getName chatbot) ": " (saludoInicial seed)))
       )
   )
 
@@ -194,51 +239,16 @@
   )
 
 
-
-
-
-
-  
-
-
 #|
- Descripcion : Genera una lista de numeros pseudoaleatorios en base al algoritmo descrito en
-               https://es.wikipedia.org/wiki/Generador_de_n%C3%BAmeros_aleatorios
- Dominio     : enteros semilla , a, c, m y i=0
- Recorrido   : lista de m numeros pseudoaleatorios
-|#
-(define (genNumeros semilla a c m i)
-  (if (= i m)
-      '()
-      (if (= i 0)
-          (append (list semilla) (genNumeros semilla a c m (+ 1 i)))
-          (append (list (modulo (+ (* a semilla) c) m)) (genNumeros (modulo (+ (* a semilla) c) m) a c m (+ 1 i))))))
-
-
-
-#|
- Descripcion : Llama a la funcion genNumeros(),genera una lista de numeros pseudoaleatorios en base al algoritmo descrito en
-               https://es.wikipedia.org/wiki/Generador_de_n%C3%BAmeros_aleatorios , utilizando los enteros:
-               a = 1103515245
-               c = 12345
-               m = 32768
-
- Dominio     : semilla, si esta es 0 se ocupa (time-second (current-time))
- Recorrido   : lista de m números pseudoaleatorios
-|#
-(define (randomList seed)
-  (if (= seed 0)
-      (genNumeros (time-second (current-time)) 1103515245 12345 32768 0)      
-      (genNumeros seed 1103515245 12345 32768 0)))
-
-#|
- Descripcion : Devuelve un numero pseudoaleatorio en el rango [0,n[
- Dominio     : semilla y n
+ Descripcion : Devuelve un numero pseudoaleatorio 
+ Dominio     : semilla
  Recorrido   : entero
 |#
-(define (randomInt seed n)
-  (modulo (list-ref (randomList seed) (/ 32768 2)) n))
-
+(define (random seed)
+  (if (equal? seed "time")
+      (remainder (+ (* 1103515245 (time-second (current-time))) 12345) 2147483648)
+      (remainder (+ (* 1103515245 seed) 12345) 2147483648))
+  )
 
 
 #|
@@ -317,6 +327,15 @@
           #t
           #f)
       #f))
+
+
+(define (getUsrLog log id)
+  (if (equal? log '())
+      #f
+      (if (= id (caaar log))
+          (cadaar log)
+          (getUsrLog (cdr log) id))))
+      
 
 #|
  Descripcion : Funcion que genera un usuario vacio
@@ -591,7 +610,14 @@
         ( (and (equal? (lastMsgFrom (getName chatbot) (getID chatbot) log) "¿Deseas comprar entradas?") (parte? mensajeUP "NO*"))
           (endDialog chatbot (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
                                                                         (string-append (hora) " " (getName chatbot) ": Adios, fue un placer ayudarte"))) seed))
-        ;( (and
+        
+        ( (and (equal? (lastMsgFrom (getName chatbot) (getID chatbot) log) "¿Deseas comprar entradas?") (parte? mensajeUP "SI*"))
+          (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                     (string-append (hora) " " (getName chatbot) ": ¿A que cine quieres ir? Tenemos el cine norte, cine sur y cine centro"))))
+
+        ( (and (not (equal? (encontrarCine mensaje) #f)) (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": ¿A que cine quieres ir? Tenemos el cine norte, cine sur y cine centro")))
+          (addUsrCinL (getID chatbot) (encontrarCine mensaje) (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                                                                         (string-append (hora) " " (getName chatbot) ": En el cine " (encontrarCine mensaje) " nos quedan entradas para los dias" )))))
         
           
 
@@ -602,15 +628,17 @@
           )
         
         (else (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
-                                                         (string-append (hora) " " (getName chatbot) ": No te entendí muy bien...." (lastMsgFrom (getName chatbot) (getID chatbot) log) ))
+                                                         (string-append (hora) " " (getName chatbot) ": No te entendí muy bien....Te repito la pregunta" )
+                                                         (string-append (hora) " " (getName chatbot) ": " (lastMsgFrom (getName chatbot) (getID chatbot) log))
+                                                         )
+                               )
+              
               )
         )
     )
-  ))
-      
+  )
 
-;(define (modificarUsrL log id newUsr)
- ; (
+       
 
 
 (define (encontrarGenero mensaje)
@@ -620,6 +648,14 @@
         ( (parte? (string-upcase mensaje) "DRAMA*") "DRAMA")
         ( (parte? (string-upcase mensaje) "COMEDIA*") "COMEDIA")
         (else #f)))
+
+
+(define (encontrarCine mensaje)
+  (cond ( (or (parte? (string-upcase mensaje) "CINE NORTE*")  (parte? (string-upcase mensaje) "NORTE*")) "NORTE")
+        ( (or (parte? (string-upcase mensaje) "CINE SUR*")  (parte? (string-upcase mensaje) "SUR*")) "SUR")
+        ( (or (parte? (string-upcase mensaje) "CINE CENTRO*")  (parte? (string-upcase mensaje) "CENTRO*")) "CENTRO")
+        (else #f)))
+        
 
 
 #|
@@ -720,13 +756,12 @@
           (string-append "ID: " (number->string (caaar log)) "\n" (lines->string (cadar log)) "\n" (log->string (cdr log)))
           "")))
 
+(define (showLog log)
+  (display (log->string log)))
 
 
 
-
-
-
-(define log3 (sendMessage "callateQL" (list "CBOT" 1) (sendMessage "chupa el pico" (list "CBOT" 1) (sendMessage "Drama" (list "CBOT" 1) (sendMessage "Recomiendame una pelicula" (list "CBOT" 1) (beginDialog (list "CBOT" 1) '() 0) 0) 0) 0) 0))
+(define log3 (sendMessage "cine norte" (list "CBOT" 1) (sendMessage "Si" (list "CBOT" 1) (sendMessage "chupa el pico" (list "CBOT" 1) (sendMessage "Drama" (list "CBOT" 1) (sendMessage "Recomiendame una pelicula" (list "CBOT" 1) (beginDialog (list "CBOT" 1) '() 0) 0) 0) 0) 0) 0))
 
 
 
