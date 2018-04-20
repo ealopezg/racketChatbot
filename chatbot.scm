@@ -730,6 +730,7 @@
                            (list "¿Desea comprar entradas?" "¿Le gustaria pasar al cine a verla?" "¿Le apetece reservar una entrada?")
                            (list "Fue un placer ayudarlo que tenga un gran día" "Bueno, cualquier cosa me puede volver a hablar" "Una lastima...Pero bueno, otro día hablaremos de nuevo");Negacion comprar entrada
                            (list "¿Qué dia le gustaria ir?" "¿Cuando tiene pensado en ir a verla?" "¿Que día asistirá al cine?");Pregunta sobre el dia
+                           (list "Para esta película le puedo ofrecer estos horarios.." "Tengo estos horarios " "Le ofrezco estos horarios..")
                            (list "¿A qué hora sería su visita?" "¿A que hora quiere que reserve la entrada?" "La entrada..¿A qué hora?")
                            (list "¿Qué cine le queda mas cerca, Norte, Centro o Sur?" "¿A qué cine va a ir, Norte, Centro o Sur?" "¿A qué cine se dirige, Norte, Centro o Sur?");Pregunta sobre la hora
                            (list "¿Su nombre cuál es?" "¿Su nombre?" "Vaya..todavia no le he pedido su nombre ¿Cómo se llama?");Pregunta sobre el nombre
@@ -739,6 +740,14 @@
                            (list "hdf1ujdf" "fhj1dfhjd" "dhfd1gfg")
                            (list "hdfu1jdf" "fhjd1fhjd" "dhfdgf1g")
                            )
+                     
+                     (list (list "¿Para que dia quieres que le muestre la cartelera?" "¿Qué día quiere ver la cartelera?" "Permitame saber el día") ;Mostrar cartelera
+                           (list "Estas son las peliculas para el día " "Estas películas le puedo ofrecer el dia " "Tenemos estas peliculas para el día")
+                           (list "Dime el nombre de la pelicula para detallarle los horarios" "Digame como se llama la película para poder mostrarle los horarios" "Permitame saber el nombre de la película")
+                           
+                           )
+                     (list (list "Adios, fue un placer haberlo ayudado" "Que tenga un buen día...hasta luego" "Gracias por utilizar nuestros servicios...Nos vemos pronto"))
+                     
                      )
   )
                            
@@ -769,9 +778,30 @@
 ;        
 ;  (eP (getCartelera chatbot) mensaje ))
 
+(define (devolverCarteleraPorDia cartelera dia)
+  (cond ((equal? dia "Lunes")     (disponible? cartelera 0))
+        ((equal? dia "Martes")    (disponible? cartelera 1))
+        ((equal? dia "Miercoles") (disponible? cartelera 2))
+        ((equal? dia "Jueves")    (disponible? cartelera 3))
+        ((equal? dia "Viernes")   (disponible? cartelera 4))
+        ((equal? dia "Sabado")    (disponible? cartelera 5))
+        ((equal? dia "Domingo")   (disponible? cartelera 6))
+        (else #f)))
 
+(define (disponible? cartelera dia)
+  (if (equal? cartelera '())
+      '()
+      (if (equal? (cadar cartelera) '())
+          (disponible?  (cdr cartelera) dia)
+      (if (not (equal? (list-ref (caddr (caadar cartelera)) dia) '()))
+          (append  (list (car (caadar cartelera))) (disponible? (append (list (list (caar cartelera) (cdadar cartelera))) (cdr cartelera)) dia))
+          (disponible? (append (list (list (caar cartelera) (cdadar cartelera))) (cdr cartelera)) dia)))))
 
-
+(define (listaPeliculas->String lista)
+  (if (= (length lista) 1)
+      (car lista)
+      (string-append (car lista) " | " (listaPeliculas->String (cdr lista)))))
+          
 #|
  Descripcion : Funcion que devuelve el ultimo mensaje enviado de cualquiera de los 2 participantes
  Dominio     : id y log
@@ -816,68 +846,97 @@
   (let ((mensajeUP (string-upcase mensaje)))
   (cond ( (parte? mensajeUP "RECOMIENDA*")
           (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
-                                                     (string-append (hora) " " (getName chatbot) ": "(respuesta 0 1 (getDiccionario chatbot) seed)))
+                                                     (string-append (hora) " " (getName chatbot) ": "(respuesta 0 0 (getDiccionario chatbot) seed)))
+          ))
+
+        ( (and (not (equal? (encontrarGenero mensaje) #f)) (respuesta? 0 0 (lastMsgFrom (getName chatbot) (getID chatbot) log) (getDiccionario chatbot)))
+          (let ((log (addUsrGeneL (getID chatbot) (encontrarGenero mensaje) log)))
+          (addUsrPelL (getID chatbot) (car (recomendarPelicula (getUsrGen (getUsrLog log (getID chatbot))) chatbot)) (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                                                                                                                                (string-append (hora) " " (getName chatbot) ": " (respuesta 0 1 (getDiccionario chatbot) seed) "'" (car (recomendarPelicula (encontrarGenero mensaje) chatbot)) "' que tiene una puntuacion de " (number->string (cdr (recomendarPelicula (encontrarGenero mensaje) chatbot))))
+                                                                                                                                                                (string-append (hora) " " (getName chatbot) ": " (respuesta 0 2 (getDiccionario chatbot) seed))
+                                                                                                                                                                )
+                                                                                                                                      )
+                      )
+            )
           )
 
-        ( (parte? mensajeUP "REVISAR LOS HORARIOS*")
+        ( (and (respuesta? 0 2 (lastMsgFrom (getName chatbot) (getID chatbot) log) (getDiccionario chatbot)) (parte? mensajeUP "NO*"))
+          (endDialog chatbot (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                                        (string-append (hora) " " (getName chatbot) ": "(respuesta 0 3 (getDiccionario chatbot) seed)))) seed))
+        
+        ( (and (respuesta? 0 2 (lastMsgFrom (getName chatbot) (getID chatbot) log) (getDiccionario chatbot)) (parte? mensajeUP "SI*"))
           (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
-                                                     (string-append (hora) " " (getName chatbot) ": ¿Para qué pelicula?")))
+                                                     (string-append (hora) " " (getName chatbot) ": "(respuesta 0 4 (getDiccionario chatbot) seed)))))
+
+        ( (and (not (equal? (encontrarDia mensaje) #f)) (respuesta? 0 4 (lastMsgFrom (getName chatbot) (getID chatbot) log) (getDiccionario chatbot)))
+          (addUsrDiaL (encontrarDia mensaje) (getID chatbot) (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                                                        (string-append (hora) " " (getName chatbot) ": "(respuesta 0 5 (getDiccionario chatbot) seed) (stringHorarios chatbot log (encontrarDia mensaje) ))
+                                                                                        (string-append (hora) " " (getName chatbot) ": "(respuesta 0 6 (getDiccionario chatbot) seed))
+                                                                                        )
+                                                                              )
+                      )
           )
+        
+        
+
+        ( (and (not (equal? (encontrarCine mensaje) #f)) (respuesta? 0 7 (lastMsgFrom (getName chatbot) (getID chatbot) log) (getDiccionario chatbot)))
+          (addUsrCinL (getID chatbot) (encontrarCine mensaje) (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                                                                         (string-append (hora) " " (getName chatbot) ": "(respuesta 0 8 (getDiccionario chatbot) seed))
+                                                                                                         ))))
+
+        ( (respuesta? 0 8 (lastMsgFrom (getName chatbot) (getID chatbot) log) (getDiccionario chatbot))
+          (let ( (log (addUsrNameL (getID chatbot) mensaje log)))
+           (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                      (string-append (hora) " " (getName chatbot) ": "(respuesta 0 9 (getDiccionario chatbot) seed) " " (getUsrNameL (getID chatbot) log) " para la pelicula '" (getUsrPel (getUsrLog log (getID chatbot))) "' el dia " (getUsrDia (getUsrLog log (getID chatbot))) " a las " (getUsrHor (getUsrLog log (getID chatbot))) " en el cine " (getUsrCin (getUsrLog log (getID chatbot))) )))))
+        
+
+
+        ;##################################################################################
+
+        ( (parte? mensajeUP "*LA CARTELERA") 
+          (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                     (string-append (hora) " " (getName chatbot) ": "(respuesta 2 0 (getDiccionario chatbot) seed))))
+          )
+
+         ( (and (not (equal? (encontrarDia mensaje) #f)) (respuesta? 2 0 (lastMsgFrom (getName chatbot) (getID chatbot) log) (getDiccionario chatbot)))
+          (addUsrDiaL (encontrarDia mensaje) (getID chatbot) (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                                                                        (string-append (hora) " " (getName chatbot) ": "(respuesta 2 1 (getDiccionario chatbot) seed) " " (encontrarDia mensaje) ": " (listaPeliculas->String (devolverCarteleraPorDia (getCartelera chatbot) (encontrarDia mensaje) )))
+                                                                                                        (string-append (hora) " " (getName chatbot) ": "(respuesta 2 2 (getDiccionario chatbot) seed))))))
+         
+         ( (and (not (equal? (encontrarPelicula chatbot mensaje) #f)) (respuesta? 2 2 (lastMsgFrom (getName chatbot) (getID chatbot) log) (getDiccionario chatbot)))
+          (let ((log (addUsrGeneL (getID chatbot) (car (encontrarPelicula chatbot mensaje))  (addUsrPelL (getID chatbot) (cdr (encontrarPelicula chatbot mensaje)) log))))
+           (endDialog chatbot (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                      (string-append (hora) " " (getName chatbot) ": "(respuesta 0 5 (getDiccionario chatbot) seed) (stringHorarios chatbot log (getUsrDia (getUsrLog log (getID chatbot)))))
+                                                      (string-append (hora) " " (getName chatbot) ": "(respuesta 3 0 (getDiccionario chatbot) seed)))) seed)))
+
+        ;##################################################################################
 
         ( (parte? mensajeUP "*COMPRAR UNA ENTRADA")
           (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
                                                      (string-append (hora) " " (getName chatbot) ": ¿Para qué pelicula?"))))
         
 
-        ( (and (not (equal? (encontrarPelicula chatbot mensaje) #f)) (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": ¿Para qué pelicula?")))
+        ( (and (not (equal? (encontrarPelicula chatbot mensaje) #f)) (respuesta? 1 0 (lastMsgFrom (getName chatbot) (getID chatbot) log) (getDiccionario chatbot)))
           (let ((log (addUsrGeneL (getID chatbot) (car (encontrarPelicula chatbot mensaje))  (addUsrPelL (getID chatbot) (cdr (encontrarPelicula chatbot mensaje)) log))))
            (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
                                                       (string-append (hora) " " (getName chatbot) ": ¿Para que día?")))))
         
 
-        
-        ( (and (not (equal? (encontrarGenero mensaje) #f)) (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": ¿Qué genero te gusta?")))
-          (let ((log (addUsrGeneL (getID chatbot) (encontrarGenero mensaje) log)))
-          (addUsrPelL (getID chatbot) (car (recomendarPelicula (getUsrGen (getUsrLog log (getID chatbot))) chatbot)) (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
-                                                                                                            (string-append (hora) " " (getName chatbot) ": Qué Bien, te recomiendo la pelicula '" (car (recomendarPelicula (encontrarGenero mensaje) chatbot)) "' que tiene una puntuacion de " (number->string (cdr (recomendarPelicula (encontrarGenero mensaje) chatbot))))
-                                                                                                            (string-append (hora) " " (getName chatbot) ": ¿Deseas comprar entradas?")))
-                       )
-          ))
-
-
-        ( (and (equal? (lastMsgFrom (getName chatbot) (getID chatbot) log) "¿Deseas comprar entradas?") (parte? mensajeUP "NO*"))
+        ( (and (respuesta? 0 2 (lastMsgFrom (getName chatbot) (getID chatbot) log) (getDiccionario chatbot)) (parte? mensajeUP "NO*"))
           (endDialog chatbot (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
-                                                                        (string-append (hora) " " (getName chatbot) ": Adios, fue un placer ayudarte"))) seed))
+                                                                        (string-append (hora) " " (getName chatbot) ": "(respuesta 0 3 (getDiccionario chatbot) seed)))) seed))
         
-        ( (and (equal? (lastMsgFrom (getName chatbot) (getID chatbot) log) "¿Deseas comprar entradas?") (parte? mensajeUP "SI*"))
-          (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
-                                                     (string-append (hora) " " (getName chatbot) ": ¿Para que día?"))))
 
         ( (and (not (equal? (encontrarDia mensaje) #f)) (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": ¿Para que día?")))
           (addUsrDiaL (encontrarDia mensaje) (getID chatbot) (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
                                                                                         (string-append (hora) " " (getName chatbot) ": Para ese dia tenemos los siguientes horarios: " (stringHorarios chatbot log (encontrarDia mensaje) ))
                                                                                         (string-append (hora) " " (getName chatbot) ": ¿Qué horario eliges?")))))
 
-        ( (and (not (equal? (encontrarHorario  log chatbot mensaje (getUsrDia (getUsrLog log (getID chatbot)))) #f)) (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": ¿Qué horario eliges?")))
+        ( (and (not (equal? (encontrarHorario  log chatbot mensaje (getUsrDia (getUsrLog log (getID chatbot)))) #f)) (respuesta? 0 6 (lastMsgFrom (getName chatbot) (getID chatbot) log) (getDiccionario chatbot)))
           (addUsrHorL  (getID chatbot) mensaje (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
-                                                                                        (string-append (hora) " " (getName chatbot) ": Ok,¿A que cine quieres ir? Tenemos el cine norte, cine sur y cine centro")
+                                                                                          (string-append (hora) " " (getName chatbot) ": "(respuesta 0 7 (getDiccionario chatbot) seed))
                                                                                         ))))
-          
 
-        
-
-        ( (and (not (equal? (encontrarCine mensaje) #f)) (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": Ok,¿A que cine quieres ir? Tenemos el cine norte, cine sur y cine centro")))
-          (addUsrCinL (getID chatbot) (encontrarCine mensaje) (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
-                                                                                                         (string-append (hora) " " (getName chatbot) ": Cuál es su nombre?" )))))
-
-        ( (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": Cuál es su nombre?"))
-          (let ( (log (addUsrNameL (getID chatbot) mensaje log)))
-           (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
-                                                                                         (string-append (hora) " " (getName chatbot) ": Todo ok " (getUsrNameL (getID chatbot) log) ", usted acaba de solicitar una reserva para la pelicula '" (getUsrPel (getUsrLog log (getID chatbot))) "' el dia " (getUsrDia (getUsrLog log (getID chatbot))) " a las " (getUsrHor (getUsrLog log (getID chatbot))) " en el cine " (getUsrCin (getUsrLog log (getID chatbot))) )))))
-        
-          
-
-        
         ( (or (parte? mensajeUP "ADIOS*") (parte? mensajeUP "CHAO*"))
           (endDialog chatbot (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
                                                                         (string-append (hora) " " (getName chatbot) ": Adios, fue un placer ayudarte"))) seed)
@@ -893,6 +952,7 @@
         )
     )
   )
+  
 
        
 
@@ -1131,7 +1191,8 @@
 
 (define user1 (list "revisar los horarios" "coco" "Jueves" "9:50" "Norte" "Esteban López" "Adios")) ;semilla 110
 (define user2 (list "recomiendame una pelicula" "terror" "si" "Sabado" "11:30" "cine sur" "Mauricio Israel")) ;semilla 110
-(define cbot2 (list "Joaquin" 1 (generarCarteleraConHorarios cartelera 110)))
+(define user3 (list "Muestrame la cartelera" "Lunes" "Swing"))
+(define cbot2 (list "Joaquin" 1 (generarCarteleraConHorarios cartelera 110) diccionarioFormal))
 
 
 
