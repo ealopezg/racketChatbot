@@ -39,6 +39,10 @@
 
 
 
+
+
+
+
 (define diccionario
   (list (list "HOLA*" (list "Hola, ¿Cómo estas?" "2" "3"))
         (list "BIEN Y TU*" (list "Bien, con ganas de ayudarte"))
@@ -56,8 +60,9 @@
 
 
 
+
 (define cartelera
-  (list (list "ACCION"(list (list "Ready Player One: Comienza el Juego" 7.9)
+  (list (list "ACCION"(list (list "Ready Player One: Comienza el Juego" 7.9 )
                             (list "Pantera Negra" 7.8)
                             (list "Rampage: Devastación" 6.6)
                             (list "Deseo de Matar" 6.5)
@@ -79,10 +84,16 @@
         )
   )
 
-(define (getHorario usuario cartelera)
-  (if (equal? cartelera '())
-      #f))
+;#################################################################################################################################
+;                                         Creacion de horarios pseudoaleatorios
+                            
+(define listaHorarios (list (cons 13 15) (cons 09 15) (cons 22 15) (cons 09 50) (cons 21 30)  (cons 11 30)  (cons 14 20) (cons 17 50)  (cons 23 40)))
 
+#|
+ Descripcion : Funcion que revisa si un elemento es parte de una lista
+ Dominio     : Elemento y lista
+ Recorrido   : Booleano
+|#
 (define (member? elemento lista)
   (if (equal? lista '())
       #f
@@ -91,15 +102,33 @@
           (member? elemento (cdr lista)))))
       
 
-(define listaHorarios (list (cons 13 15) (cons 9 15) (cons 22 15) (cons 9 50) (cons 9 50) (cons 21 30)  (cons 11 30)  (cons 14 20) (cons 17 50)  (cons 23 40)))
+#|
+ Descripcion : Funcion que genera horarios para una lista de peliculas
+ Dominio     : Lista de peliculas y seed
+ Recorrido   : lista de Peliculas modificada con su horario
+|#
+(define (generarHorariosListaPeliculas listaPeliculas seed)
+  (if (equal? listaPeliculas '())
+      '()
+      (append (list (append (car listaPeliculas) (list (generarHorarios seed)))) (generarHorariosListaPeliculas (cdr listaPeliculas) (random seed)))))
 
-(define listaH (reverse listaHorarios))
 
-;(define (generarCarteleraHorarios cartelera seed)
- ; (
+#|
+ Descripcion : Funcion que genera una cartelera con los horarios disponibles
+ Dominio     : cartelera y semilla
+ Recorrido   : cartelera con horarios
+|#
+(define (generarCarteleraConHorarios cartelera seed)
+  (if (equal? cartelera '())
+      '()
+      (append (list (list (caar cartelera) (generarHorariosListaPeliculas (cadar cartelera) seed))) (generarCarteleraConHorarios (cdr cartelera) (random seed)))))
 
 
-
+#|
+ Descripcion : Funcion que elige n elementos al azar de una lista
+ Dominio     : lista n y semilla
+ Recorrido   : lista de n elementos de la lista original
+|#
 (define (elegirAlgunos lista n seed)
   (define (elegirAlgun1 lista n i seed listaAux)
     (if (= i n)
@@ -113,29 +142,34 @@
         )
     )(elegirAlgun1 lista n 0 seed '()))
 
+#|
+ Descripcion : Funcion que genera el horario de una pelicula
+ Dominio     : semilla
+ Recorrido   : lista de horarios para cada dia de la semana
+|#
 (define (generarHorarios seed)
   (define (generarHor1 seed dia)
     (if (= dia 7)
         '()
-        (append (list (elegirAlgunos listaHorarios (remainder (random seed) 9) (random seed))) (generarHor1 (random seed) (+ dia 1)))))
+        (append (list (quickSort (elegirAlgunos listaHorarios (remainder (random seed) 6) (random seed))) ) (generarHor1 (random seed) (+ dia 1)))))
   (generarHor1 seed 0))
       
-(define (sortHor lista)
-  (if (= (length lista) 1)
-      lista
-      (if (= (length lista) 2)
-          (cond ((or (> (caar lista) (caadr lista)) (and (= (caar lista) (caadr lista)) (>= (cdar lista) (cdadr lista))) (and (= (caar lista) (caadr lista)) (>= (cdar lista) (cdadr lista)))) lista)
-                ((or (< (caar lista) (caadr lista)) (and (= (caar lista) (caadr lista)) (< (cdar lista) (cdadr lista)))) (list (cadr lista) (car lista))))
-          (append (sortHor (sublista lista 0 (/ (length lista) 2))) (sortHor (sublista lista (/ (length lista) 2) (length lista)))))))
-
-
+#|
+ Descripcion : Funcion que devuelve los horarios más tardes que n
+ Dominio     : lista de horarios y horario n
+ Recorrido   : lista de horarios 
+|#
 (define (mayores lista n)
   (if (= (length lista) 0)
       '()
       (if (or (> (caar lista) (car n)) (and (= (caar lista) (car n)) (>= (cdar lista) (cdr n))))
           (append (list (car lista)) (mayores (cdr lista) n))
           (mayores (cdr lista) n))))
-
+#|
+ Descripcion : Funcion que devuelve los horarios más tempranos que n
+ Dominio     : lista de horarios y horario n
+ Recorrido   : lista de horarios 
+|#
 (define (menores lista n)
   (if (= (length lista) 0)
       '()
@@ -145,9 +179,12 @@
 
 
 
-
+#|
+ Descripcion : Funcion que ordena un arreglo de pares
+ Dominio     : Lista de pares
+ Recorrido   : Lista de pares
+|#
 (define (quickSort lista)
-  (define (qS lista)
     (if (= (length lista) 0)
         '()
         (if (= (length lista) 1)
@@ -156,30 +193,53 @@
             (if (or (> (caadr lista) (caar lista)) (and (= (caadr lista) (caar lista)) (>= (cdadr lista) (cdar lista))))
                 lista
                 (list (cadr lista) (car lista)))
-            (append (qS (menores (cdr lista) (car lista))) (list (car lista)) (qS (mayores (cdr lista) (car lista))))))))
-  (qS lista))
+            (append (quickSort (menores (cdr lista) (car lista))) (list (car lista)) (quickSort (mayores (cdr lista) (car lista))))))))
+
+#|
+ Descripcion : Funcion que devuelve la lista de horarios de la semana de una pelicula
+ Dominio     : lista de peliculas y string con el nombre de la pelicula
+ Recorrido   : lista de horarios de la semana
+|#
+(define (devolverListaHorarios listaPeliculas pelicula)
+  (if (equal? listaPeliculas '())
+      ""
+      (if (equal? (caar listaPeliculas) pelicula)
+          (caddar listaPeliculas)
+          (devolverListaHorarios (cdr listaPeliculas) pelicula))))
+
+#|
+ Descripcion : Funcion que transforma una lista de horarios diarios en un string para que el chatbot se lo muestre al usuario
+ Dominio     : lista de horarios diarios
+ Recorrido   : string
+|#
+(define (listaHorariosDiaString listaHorarios)
+  (if (equal? listaHorarios '())
+      "No hay funciones ese dia"
+      (if (= (length listaHorarios) 1)
+          (string-append (number->string (caar listaHorarios)) ":" (number->string (cdar listaHorarios)))
+          (string-append (number->string (caar listaHorarios)) ":" (number->string (cdar listaHorarios)) " - " (listaHorariosDiaString (cdr listaHorarios))))))
+
+#|
+ Descripcion : Funcion que transforma una lista de horarios diarios en un string para que el chatbot se lo muestre al usuario
+ Dominio     : chatbot log y el dia de la semana
+ Recorrido   : string (llamado a la funcion listaHorariosDiaString)
+|#
+(define (stringHorarios chatbot log dia)
+  (cond ((equal? dia "Lunes") (listaHorariosDiaString (list-ref (devolverListaHorarios (devolverPeliculas (getUsrGen (getUsrLog log (getID chatbot))) (getCartelera chatbot)) (getUsrPel (getUsrLog log (getID chatbot)))) 0)))
+        ((equal? dia "Martes") (listaHorariosDiaString (list-ref (devolverListaHorarios (devolverPeliculas (getUsrGen (getUsrLog log (getID chatbot))) (getCartelera chatbot)) (getUsrPel (getUsrLog log (getID chatbot)))) 1)))
+        ((equal? dia "Miercoles") (listaHorariosDiaString (list-ref (devolverListaHorarios (devolverPeliculas (getUsrGen (getUsrLog log (getID chatbot))) (getCartelera chatbot)) (getUsrPel (getUsrLog log (getID chatbot)))) 2)))
+        ((equal? dia "Jueves") (listaHorariosDiaString (list-ref (devolverListaHorarios (devolverPeliculas (getUsrGen (getUsrLog log (getID chatbot))) (getCartelera chatbot)) (getUsrPel (getUsrLog log (getID chatbot)))) 3)))
+        ((equal? dia "Viernes") (listaHorariosDiaString (list-ref (devolverListaHorarios (devolverPeliculas (getUsrGen (getUsrLog log (getID chatbot))) (getCartelera chatbot)) (getUsrPel (getUsrLog log (getID chatbot)))) 4)))
+        ((equal? dia "Sabado") (listaHorariosDiaString (list-ref (devolverListaHorarios (devolverPeliculas (getUsrGen (getUsrLog log (getID chatbot))) (getCartelera chatbot)) (getUsrPel (getUsrLog log (getID chatbot)))) 5)))
+        ((equal? dia "Domingo") (listaHorariosDiaString (list-ref (devolverListaHorarios (devolverPeliculas (getUsrGen (getUsrLog log (getID chatbot))) (getCartelera chatbot)) (getUsrPel (getUsrLog log (getID chatbot)))) 6)))
+        (else "")
+        ))
 
 
 
 
-(define (ordenar lista)
-  (if (or (> (caadr lista) (caar lista)) (and (= (caadr lista) (caar lista)) (>= (cdadr lista) (cdar lista))))
-      lista
-      (list (cadr lista) (car lista))))
-                  
 
-
-                  
-(define (sublista lista j k)
-  (define (sub1 lista j k i)
-    (if (or (and (> i k)) (equal? lista '()))
-        '()
-        (if (and (>= i j) (< i k))
-            (append (list (car lista)) (sub1 (cdr lista) j k (+ 1 i)))
-            (sub1 (cdr lista) j k (+ 1 i)))))
-  (sub1 lista j k 0)
-  )
-
+                                    
 
 #|
  Descripcion : Crea el saludo inicial a partir de la hora.
@@ -195,37 +255,85 @@
   )
 
 
+
+;##  TDA CHATBOT
+
 #|
  Descripcion : Genera un chatbot a partir de su nombre y personalidad
- Dominio     : String con el nombre y entero con la personalidad
- Recorrido   : Arreglo
+ Dominio     : String con el nombre y entero con el id
+ Recorrido   : chatbot
 |#
-(define (genChatbot nombre id)
-  (list nombre id))
+(define (genChatbot nombre id cartelera diccionario)
+  (list nombre id cartelera diccionario))
 
+#|
+ Descripcion : Funcion que comprueba si la entrada es un chatbot o no
+ Dominio     : cualquier cosa
+ Recorrido   : chatbot
+|#
 (define (chatbot? cbot)
   (if (list? cbot)
-      (if (and (string? (car cbot)) (number? (cadr cbot)))
+      (if (and (string? (car cbot)) (number? (cadr cbot)) (list? (caddr cbot)) (list? (cadddr cbot)))
           #t
           #f)
       #f))
 
+(define (getDiccionario cbot)
+  (if (chatbot? cbot)
+      (cadddr cbot)
+      #f))
+  
+
+#|
+ Descripcion : Funcion que devuelve la cartelera de un chatbot
+ Dominio     : chatbot
+ Recorrido   : cartelera
+|#
+
+(define (getCartelera cbot)
+  (if (chatbot? cbot)
+      (caddr cbot)
+      #f))
+
+#|
+ Descripcion : Funcion que devuelve el nombre del chatbot
+ Dominio     : chatbot
+ Recorrido   : string con el nombre
+|#
 (define (getName cbot)
   (if (chatbot? cbot)
       (car cbot)
       #f))
 
+
+#|
+ Descripcion : Funcion que devuelve el id de un chatbot
+ Dominio     : Chatbot
+ Recorrido   : string con el id
+|#
 (define (getID cbot)
   (if (chatbot? cbot)
       (cadr cbot)
       0))
 
+#|
+ Descripcion : Funcion que genera un nuevo id para el chatbot a partir de un log
+ Dominio     : chatbot y log
+ Recorrido   : chatbot
+|#
 (define (genID cbot log)
   (define (genID1 cbot log n)
     (if (equal? log '())
         (list (getName cbot) n)
         (genID1 cbot (cdr log) (+ n 1))
         )) (genID1 cbot log 0))
+
+
+
+
+
+        
+        
 
 
 (define (elegir seed lista)
@@ -367,6 +475,9 @@
           (devolverFrase mensaje seed (cdr diccionario))
           )))
 
+
+
+
 #|
  Descripcion : Funcion que genera un usuario
  Dominio     : strings nombre,genero,pelicula,cine, dia, hora
@@ -492,13 +603,11 @@
  Recorrido   : string con el nombre de usuario, en el caso de que no exista nombre se utiliza usuario
 |#
 (define (getUsrNameL id log)
-  (if (equal? log '())
-      "USUARIO"
-      (if (= (caaar log) id)
-          (if (equal? (getUsrName (cadaar log)) "")
-              "USUARIO"
-              (getUsrName (cadaar log)))
-          (getUsrNameL id (cdr log)))))
+  (let ((nombre (getUsrName (getUsrLog log id))))
+  (if (equal? nombre "")
+      "DESCONOCIDO"
+      nombre
+  )))
 
 #|
  Descripcion : Funcion que agrega el genero al usuario 
@@ -583,12 +692,12 @@
   )
 
 
-(define (addUsrDiaL log id dia)
+(define (addUsrDiaL dia id log)
    (if (equal? log '())
         '()
        (if (= (caaar log) id)
-           (append (list (list (list id (addUsrDia (cadaar log) dia)) (cadar log))) (addUsrDiaL (cdr log) id dia))
-           (append (list (car log)) (addUsrDiaL (cdr log) id dia))
+           (append (list (list (list id (addUsrDia (cadaar log) dia)) (cadar log))) (addUsrDiaL dia id (cdr log)))
+           (append (list (car log)) (addUsrDiaL dia id (cdr log)))
            )
        )
   )
@@ -605,19 +714,69 @@
       (genEmptyUsr))
   )
 
-(define (addUsrHorL log id hora)
+(define (addUsrHorL id hora log)
    (if (equal? log '())
         '()
        (if (= (caaar log) id)
-           (append (list (list (list id (addUsrHor (cadaar log) hora)) (cadar log))) (addUsrHorL (cdr log) id hora))
-           (append (list (car log)) (addUsrHorL (cdr log) id hora))
+           (append (list (list (list id (addUsrHor (cadaar log) hora)) (cadar log))) (addUsrHorL  id hora (cdr log)))
+           (append (list (car log)) (addUsrHorL  id hora (cdr log)))
            )
        )
   )
 
+(define diccionarioFormal (list
+                     (list (list "¿Qué genero te gusta?" "¿Cual es el tipo de películas que más le agrada?" "¿Que genero suele ver?")                     ;RECOMENDACION
+                           (list "Le recomiendo la siguiente película " "Mis algoritmos detectan que la mejor película para usted es " "Tengo una película para usted, es ")
+                           (list "¿Desea comprar entradas?" "¿Le gustaria pasar al cine a verla?" "¿Le apetece reservar una entrada?")
+                           (list "Fue un placer ayudarlo que tenga un gran día" "Bueno, cualquier cosa me puede volver a hablar" "Una lastima...Pero bueno, otro día hablaremos de nuevo");Negacion comprar entrada
+                           (list "¿Qué dia le gustaria ir?" "¿Cuando tiene pensado en ir a verla?" "¿Que día asistirá al cine?");Pregunta sobre el dia
+                           (list "¿A qué hora sería su visita?" "¿A que hora quiere que reserve la entrada?" "La entrada..¿A qué hora?")
+                           (list "¿Qué cine le queda mas cerca, Norte, Centro o Sur?" "¿A qué cine va a ir, Norte, Centro o Sur?" "¿A qué cine se dirige, Norte, Centro o Sur?");Pregunta sobre la hora
+                           (list "¿Su nombre cuál es?" "¿Su nombre?" "Vaya..todavia no le he pedido su nombre ¿Cómo se llama?");Pregunta sobre el nombre
+                           (list "Bueno, está lista la reserva a nombre de " "Listo, ya he hecho la reserva a nombre de" "Su entrada ha sido reservada con exito, se encuentra a nombre de")
+                           )
+                     (list (list "¿Cual es la película que quiere ver?" "¿De qué pelicula estamos hablando?" "Dificil elegir entre tantas películas, ¿Cual es el nombre de su película elegida?") ;COMPRAR ENTRADA
+                           (list "hdf1ujdf" "fhj1dfhjd" "dhfd1gfg")
+                           (list "hdfu1jdf" "fhjd1fhjd" "dhfdgf1g")
+                           )
+                     )
+  )
+                           
+
+(define (respuesta modo etapa diccionario seed)
+  (elegir seed (list-ref (list-ref diccionario modo) etapa)))
+
+(define (respuesta? modo etapa mensaje diccionario)
+  (member? mensaje (list-ref (list-ref diccionario modo) etapa))) 
+  
+              
+
+
+;(define (encontrarPelicula chatbot mensaje)
+;  (define (eP cartelera mensaje)
+;    (if (equal? cartelera '())
+;        #f
+;        (if (equal? (cadar cartelera) '())
+;             (eP (cdr cartelera) mensaje)
+;             (if (equal? (string-upcase (car (caadar cartelera))) (string-upcase mensaje))
+;                 (cons (caar cartelera) (car (caadar cartelera)))
+;                 (eP (append (list (list (caar cartelera) (cdadar cartelera))) (cdr cartelera)) mensaje)
+;                 )
+;            )
+;        )
+;    )
+;    
+;        
+;  (eP (getCartelera chatbot) mensaje ))
 
 
 
+
+#|
+ Descripcion : Funcion que devuelve el ultimo mensaje enviado de cualquiera de los 2 participantes
+ Dominio     : id y log
+ Recorrido   : string con el mensaje
+|#
 (define (lastMsg id log)
   (if (equal? log '())
       ""
@@ -625,6 +784,11 @@
           (substring (last (cadar log)) 22)
           (lastMsg id (cdr log)))))
 
+#|
+ Descripcion : Funcion que devuelve el ultimo mensaje enviado por name (puede se
+ Dominio     :
+ Recorrido   : 
+|#
 (define (lastMsgFromNameList name lista)
   (if (equal? lista '())
       ""
@@ -640,25 +804,42 @@
           (lastMsg id (cdr log)))))
   
           
-          
-(define (addListMsgToLog id log lista)
-  (if (equal? lista '())
-      log
-      (addListMsgToLog id (addMsgToLog id log (car lista))  (cdr lista))))
 
 
 
+#|
+ Descripcion : Funcion que controla las acciones que el chatbot debe hacer segun lo que responde el usuario
+ Dominio     : mensaje chatbot log seed
+ Recorrido   : log modificado
+|#
 (define (accion mensaje chatbot log seed)
   (let ((mensajeUP (string-upcase mensaje)))
   (cond ( (parte? mensajeUP "RECOMIENDA*")
           (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
-                                                     (string-append (hora) " " (getName chatbot) ": ¿Qué genero te gusta?")))
+                                                     (string-append (hora) " " (getName chatbot) ": "(respuesta 0 1 (getDiccionario chatbot) seed)))
           )
+
+        ( (parte? mensajeUP "REVISAR LOS HORARIOS*")
+          (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                     (string-append (hora) " " (getName chatbot) ": ¿Para qué pelicula?")))
+          )
+
+        ( (parte? mensajeUP "*COMPRAR UNA ENTRADA")
+          (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                     (string-append (hora) " " (getName chatbot) ": ¿Para qué pelicula?"))))
+        
+
+        ( (and (not (equal? (encontrarPelicula chatbot mensaje) #f)) (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": ¿Para qué pelicula?")))
+          (let ((log (addUsrGeneL (getID chatbot) (car (encontrarPelicula chatbot mensaje))  (addUsrPelL (getID chatbot) (cdr (encontrarPelicula chatbot mensaje)) log))))
+           (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                      (string-append (hora) " " (getName chatbot) ": ¿Para que día?")))))
+        
 
         
         ( (and (not (equal? (encontrarGenero mensaje) #f)) (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": ¿Qué genero te gusta?")))
-          (addUsrPelL (getID chatbot) (car (recomendarPelicula (encontrarGenero mensaje) cartelera)) (addUsrGeneL (getID chatbot) (encontrarGenero mensaje) (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
-                                                                                                            (string-append (hora) " " (getName chatbot) ": Qué Bien, te recomiendo la pelicula '" (car (recomendarPelicula (encontrarGenero mensaje) cartelera)) "' que tiene una puntuacion de " (number->string (cadr (recomendarPelicula (encontrarGenero mensaje) cartelera))))
+          (let ((log (addUsrGeneL (getID chatbot) (encontrarGenero mensaje) log)))
+          (addUsrPelL (getID chatbot) (car (recomendarPelicula (getUsrGen (getUsrLog log (getID chatbot))) chatbot)) (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                                                                            (string-append (hora) " " (getName chatbot) ": Qué Bien, te recomiendo la pelicula '" (car (recomendarPelicula (encontrarGenero mensaje) chatbot)) "' que tiene una puntuacion de " (number->string (cdr (recomendarPelicula (encontrarGenero mensaje) chatbot))))
                                                                                                             (string-append (hora) " " (getName chatbot) ": ¿Deseas comprar entradas?")))
                        )
           ))
@@ -670,11 +851,29 @@
         
         ( (and (equal? (lastMsgFrom (getName chatbot) (getID chatbot) log) "¿Deseas comprar entradas?") (parte? mensajeUP "SI*"))
           (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
-                                                     (string-append (hora) " " (getName chatbot) ": ¿A que cine quieres ir? Tenemos el cine norte, cine sur y cine centro"))))
+                                                     (string-append (hora) " " (getName chatbot) ": ¿Para que día?"))))
 
-        ( (and (not (equal? (encontrarCine mensaje) #f)) (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": ¿A que cine quieres ir? Tenemos el cine norte, cine sur y cine centro")))
+        ( (and (not (equal? (encontrarDia mensaje) #f)) (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": ¿Para que día?")))
+          (addUsrDiaL (encontrarDia mensaje) (getID chatbot) (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                                                        (string-append (hora) " " (getName chatbot) ": Para ese dia tenemos los siguientes horarios: " (stringHorarios chatbot log (encontrarDia mensaje) ))
+                                                                                        (string-append (hora) " " (getName chatbot) ": ¿Qué horario eliges?")))))
+
+        ( (and (not (equal? (encontrarHorario  log chatbot mensaje (getUsrDia (getUsrLog log (getID chatbot)))) #f)) (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": ¿Qué horario eliges?")))
+          (addUsrHorL  (getID chatbot) mensaje (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                                                        (string-append (hora) " " (getName chatbot) ": Ok,¿A que cine quieres ir? Tenemos el cine norte, cine sur y cine centro")
+                                                                                        ))))
+          
+
+        
+
+        ( (and (not (equal? (encontrarCine mensaje) #f)) (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": Ok,¿A que cine quieres ir? Tenemos el cine norte, cine sur y cine centro")))
           (addUsrCinL (getID chatbot) (encontrarCine mensaje) (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
-                                                                                                         (string-append (hora) " " (getName chatbot) ": En el cine " (encontrarCine mensaje) " nos quedan entradas para los dias" )))))
+                                                                                                         (string-append (hora) " " (getName chatbot) ": Cuál es su nombre?" )))))
+
+        ( (equal? (lastMsg (getID chatbot) log) (string-append (getName chatbot) ": Cuál es su nombre?"))
+          (let ( (log (addUsrNameL (getID chatbot) mensaje log)))
+           (addListMsgToLog (getID chatbot) log (list (string-append (hora) " " (getUsrNameL (getID chatbot) log) ": " mensaje)
+                                                                                         (string-append (hora) " " (getName chatbot) ": Todo ok " (getUsrNameL (getID chatbot) log) ", usted acaba de solicitar una reserva para la pelicula '" (getUsrPel (getUsrLog log (getID chatbot))) "' el dia " (getUsrDia (getUsrLog log (getID chatbot))) " a las " (getUsrHor (getUsrLog log (getID chatbot))) " en el cine " (getUsrCin (getUsrLog log (getID chatbot))) )))))
         
           
 
@@ -697,7 +896,11 @@
 
        
 
-
+#|
+ Descripcion : Funcion que encuentra si el usuario dijo un genero
+ Dominio     : string con el mensaje
+ Recorrido   : string con el genero o falso si es que no existe
+|#
 (define (encontrarGenero mensaje)
   (cond ( (parte? (string-upcase mensaje) "TERROR*") "TERROR")
         ( (parte? (string-upcase mensaje) "ACCION*") "ACCION")
@@ -706,13 +909,87 @@
         ( (parte? (string-upcase mensaje) "COMEDIA*") "COMEDIA")
         (else #f)))
 
-
+#|
+ Descripcion : Funcion que encuentra si el usuario dijo un cine
+ Dominio     : string con el mensaje
+ Recorrido   : string con el nombre del cine o falso si es que no existe
+|#
 (define (encontrarCine mensaje)
   (cond ( (or (parte? (string-upcase mensaje) "CINE NORTE*")  (parte? (string-upcase mensaje) "NORTE*")) "NORTE")
         ( (or (parte? (string-upcase mensaje) "CINE SUR*")  (parte? (string-upcase mensaje) "SUR*")) "SUR")
         ( (or (parte? (string-upcase mensaje) "CINE CENTRO*")  (parte? (string-upcase mensaje) "CENTRO*")) "CENTRO")
         (else #f)))
+
+#|
+ Descripcion : Funcion que encuentra si el usuario dijo un dia de la semana
+ Dominio     : string con el mensaje
+ Recorrido   : string con el dia de la semana o falso si es que no existe
+|#
+(define (encontrarDia mensaje)
+  (cond ( (parte? (string-upcase mensaje) "*LUNES") "Lunes")
+        ( (parte? (string-upcase mensaje) "*MARTES") "Martes")
+        ( (parte? (string-upcase mensaje) "*MIERCOLES") "Miercoles")
+        ( (parte? (string-upcase mensaje) "*JUEVES") "Viernes")
+        ( (parte? (string-upcase mensaje) "*VIERNES") "Viernes")
+        ( (parte? (string-upcase mensaje) "*SABADO") "Sabado")
+        ( (parte? (string-upcase mensaje) "*DOMINGO") "Domingo")
+        (else #f)))
+
+#|
+ Descripcion : Funcion que encuentra si el usuario dijo un horario
+ Dominio     : string con el mensaje
+ Recorrido   : string con el horario o falso si es que no existe
+|#
+(define (encontrarHorario log chatbot mensaje dia)
+  (define (eH listaHorarios mensaje)
+  (if (and (member? #\: (string->list mensaje)) (>= 5 (string-length mensaje)) (member? (horarioS->P mensaje) listaHorarios))
+      mensaje
+      #f))
+  (cond ((equal? dia "Lunes")     (eH (list-ref (devolverListaHorarios (devolverPeliculas (getUsrGen (getUsrLog log (getID chatbot) )) (getCartelera chatbot)) (getUsrPel (getUsrLog log (getID chatbot)))) 0) mensaje))
+        ((equal? dia "Martes")    (eH (list-ref (devolverListaHorarios (devolverPeliculas (getUsrGen (getUsrLog log (getID chatbot) )) (getCartelera chatbot)) (getUsrPel (getUsrLog log (getID chatbot)))) 1) mensaje))
+        ((equal? dia "Miercoles") (eH (list-ref (devolverListaHorarios (devolverPeliculas (getUsrGen (getUsrLog log (getID chatbot) )) (getCartelera chatbot)) (getUsrPel (getUsrLog log (getID chatbot)))) 2) mensaje))
+        ((equal? dia "Jueves")    (eH (list-ref (devolverListaHorarios (devolverPeliculas (getUsrGen (getUsrLog log (getID chatbot) )) (getCartelera chatbot)) (getUsrPel (getUsrLog log (getID chatbot)))) 3) mensaje))
+        ((equal? dia "Viernes")   (eH (list-ref (devolverListaHorarios (devolverPeliculas (getUsrGen (getUsrLog log (getID chatbot) )) (getCartelera chatbot)) (getUsrPel (getUsrLog log (getID chatbot)))) 4) mensaje))
+        ((equal? dia "Sabado")    (eH (list-ref (devolverListaHorarios (devolverPeliculas (getUsrGen (getUsrLog log (getID chatbot) )) (getCartelera chatbot)) (getUsrPel (getUsrLog log (getID chatbot)))) 5) mensaje))
+        ((equal? dia "Domingo")   (eH (list-ref (devolverListaHorarios (devolverPeliculas (getUsrGen (getUsrLog log (getID chatbot) )) (getCartelera chatbot)) (getUsrPel (getUsrLog log (getID chatbot)))) 6) mensaje))
+        (else #f)))
+
+#|
+ Descripcion : Funcion que encuentra si el usuario dijo una pelicula de la cartelera
+ Dominio     : string con el mensaje
+ Recorrido   : par con el genero de la pelicula y nombre de la pelicula o falso si es que no existe
+|#
+(define (encontrarPelicula chatbot mensaje)
+  (define (eP cartelera mensaje)
+    (if (equal? cartelera '())
+        #f
+        (if (equal? (cadar cartelera) '())
+             (eP (cdr cartelera) mensaje)
+             (if (equal? (string-upcase (car (caadar cartelera))) (string-upcase mensaje))
+                 (cons (caar cartelera) (car (caadar cartelera)))
+                 (eP (append (list (list (caar cartelera) (cdadar cartelera))) (cdr cartelera)) mensaje)
+                 )
+            )
+        )
+    )
+    
         
+  (eP (getCartelera chatbot) mensaje ))
+
+
+#|
+ Descripcion : Funcion que transforma un string con formato de horario a par
+ Dominio     : string con el horario
+ Recorrido   : par
+|#
+(define (horarioS->P str)
+  (if (equal? (list-ref (string->list str) 1) #\:)
+      (cons (string->number (substring str 0 1)) (string->number (substring str 2 4)))
+      (if (equal? (list-ref (string->list str) 2) #\:)
+          (cons (string->number (substring str 0 2)) (string->number (substring str 3 5)))
+          (cons 0 0))))
+
+;## MANEJO DE LOGS
 
 
 #|
@@ -747,16 +1024,51 @@
       (append (list (list (caar log) (append (cadar log) (list str)))) (addMsgToLog id (cdr log) str))
       (append (list (caar log)) (addMsgToLog id (cdr log) str)))))
 
+#|
+ Descripcion : Funcion que añade una lista de mensajes al log en orden.
+ Dominio     : id log y lista de mensajes
+ Recorrido   : log modificado
+|#          
+(define (addListMsgToLog id log lista)
+  (if (equal? lista '())
+      log
+      (addListMsgToLog id (addMsgToLog id log (car lista))  (cdr lista))))
 
-
-(define cbot '("CHATBOT" 0))
-
-
+#|
+ Descripcion : Funcion que transforma una lista de strings en una string parrafo
+ Dominio     : lista de mensajes
+ Recorrido   : string
+|#  
 (define (lines->string lista)
   (if (equal? lista '())
       ""
       (string-append (car lista) "\n" (lines->string (cdr lista)))))
 
+#|
+ Descripcion : Funcion que transforma un log en string
+ Dominio     : log
+ Recorrido   : string
+|#
+(define (log->string log)
+  (if (equal? log '())
+      ""
+      (if (log? log)
+          (string-append "ID: " (number->string (caaar log)) "\n" (lines->string (cadar log)) "\n" (log->string (cdr log)))
+          "")))
+
+
+#|
+ Descripcion : Funcion que muestra el log en pantalla
+ Dominio     : log
+ Recorrido   : nada
+|#
+(define (showLog log)
+  (display (log->string log)))
+
+
+
+
+;## MANEJO DE PELICULAS
 
 
 #|
@@ -764,15 +1076,17 @@
  Dominio     : string genero, y cartelera
  Recorrido   : par donde el primer elemento es el nombre de la pelicula y el segundo es el puntaje
 |#
-(define (recomendarPelicula genero cartelera)
-  (if (equal? cartelera '())
-              #f
-              (if (equal? (caar cartelera) genero)
-                  (caadar cartelera)
-                  (recomendarPelicula genero (cdr cartelera))
-                  )
-              )
-  )
+(define (recomendarPelicula genero chatbot)
+  (define (rP1 genero cartelera)
+    (if (equal? cartelera '())
+        #f
+        (if (equal? (caar cartelera) genero)
+            (cons (car(caadar cartelera)) (cadr (caadar cartelera)))
+            (rP1 genero (cdr cartelera))
+            )
+        )
+    )(rP1 genero (getCartelera chatbot)))
+
 
 #|
  Descripcion : Funcion que devuelve una lista con todas las peliculas del genero
@@ -801,24 +1115,23 @@
         (string-append (number->string n) ".- " (caar lista) " (" (number->string (cdar lista)) ")" "\n" (pe->s (cdr lista) (+ n 1)))))
   (pe->s lista 1))
 
-#|
- Descripcion : Funcion que transforma un log en string
- Dominio     : log
- Recorrido   : string
-|#
-(define (log->string log)
-  (if (equal? log '())
-      ""
-      (if (log? log)
-          (string-append "ID: " (number->string (caaar log)) "\n" (lines->string (cadar log)) "\n" (log->string (cdr log)))
-          "")))
-
-(define (showLog log)
-  (display (log->string log)))
 
 
 
-;(define log3 (sendMessage "cine norte" (list "CBOT" 1) (sendMessage "Si" (list "CBOT" 1) (sendMessage "chupa el pico" (list "CBOT" 1) (sendMessage "accion" (list "CBOT" 1) (sendMessage "Recomiendame una pelicula" (list "CBOT" 1) (beginDialog (list "CBOT" 1) '() 0) 0) 0) 0) 0) 0))
+
+
+(define (test user chatbot log seed)
+  (define (test1 usr cbot lg sd)
+    (if (equal? usr '())
+        lg
+        (test1 (cdr usr) cbot (sendMessage (car usr) cbot lg sd) sd)))
+  (test1 user chatbot (beginDialog chatbot log seed) seed))
+  
+
+
+(define user1 (list "revisar los horarios" "coco" "Jueves" "9:50" "Norte" "Esteban López" "Adios")) ;semilla 110
+(define user2 (list "recomiendame una pelicula" "terror" "si" "Sabado" "11:30" "cine sur" "Mauricio Israel")) ;semilla 110
+(define cbot2 (list "Joaquin" 1 (generarCarteleraConHorarios cartelera 110)))
 
 
 
